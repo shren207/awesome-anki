@@ -109,50 +109,50 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
-/* 컨테이너 스타일 */
-.container {
+/* Callout 스타일 (Anki 카드용) */
+.callout {
   margin: 1rem 0;
   padding: 1rem;
   border-radius: 0.5rem;
   border-left: 4px solid;
 }
 
-.container-title {
+.callout-title {
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
 
-.container-tip {
+.callout-tip {
   background-color: hsl(142 76% 36% / 0.1);
   border-color: hsl(142 76% 36%);
 }
 
-.container-warning {
+.callout-warning {
   background-color: hsl(38 92% 50% / 0.1);
   border-color: hsl(38 92% 50%);
 }
 
-.container-error {
+.callout-error {
   background-color: hsl(0 84% 60% / 0.1);
   border-color: hsl(0 84% 60%);
 }
 
-.container-note {
+.callout-note {
   background-color: hsl(221 83% 53% / 0.1);
   border-color: hsl(221 83% 53%);
 }
 
-.container-link {
+.callout-link {
   background-color: hsl(262 83% 58% / 0.1);
   border-color: hsl(262 83% 58%);
 }
 
-.container-toggle {
+.callout-toggle {
   background-color: hsl(var(--muted));
   border-color: hsl(var(--border));
 }
 
-.container-toggle summary {
+.callout-toggle summary {
   cursor: pointer;
   font-weight: 500;
 }

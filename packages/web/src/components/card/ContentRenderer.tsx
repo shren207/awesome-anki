@@ -54,11 +54,11 @@ function processContainers(text: string): string {
       const isToggle = type === 'toggle';
 
       if (isToggle) {
-        result.push(`<details class="container container-toggle"><summary>${title || 'Toggle'}</summary>`);
+        result.push(`<details class="callout callout-toggle"><summary>${title || 'Toggle'}</summary>`);
       } else {
-        result.push(`<div class="container container-${type}">`);
+        result.push(`<div class="callout callout-${type}">`);
         if (title) {
-          result.push(`<div class="container-title">${title}</div>`);
+          result.push(`<div class="callout-title">${title}</div>`);
         }
       }
       stack.push(isToggle ? 'details' : 'div');
