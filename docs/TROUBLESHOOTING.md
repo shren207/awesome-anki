@@ -385,3 +385,82 @@ curl -s http://localhost:8765 -X POST -d '{
 bun run --cwd packages/web tsc --noEmit
 bun run --cwd packages/server tsc --noEmit
 ```
+
+---
+
+## 14. Phase 7 이슈 (도움말 시스템 + 온보딩)
+
+### 14.1 react-joyride import 에러
+
+**문제**: `react-joyride`에서 `CallBackProps` 타입을 import할 때 런타임 에러 발생
+
+```typescript
+// 에러 발생
+import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
+// Uncaught SyntaxError: The requested module does not provide an export named 'CallBackProps'
+```
+
+**원인**: `CallBackProps`는 타입(type)인데 named export로 import하면 Vite/esbuild에서 런타임에 찾을 수 없음
+
+**해결**: `type` 키워드를 사용하여 타입 전용 import로 명시
+
+```typescript
+// 해결
+import Joyride, { STATUS, type Step, type CallBackProps } from 'react-joyride';
+```
+
+**참고**: TypeScript의 `isolatedModules` 옵션이 활성화된 환경에서는 타입 import에 `type` 키워드 사용 권장
+
+### 14.2 HelpTooltip cursor 스타일 누락
+
+**문제**: HelpTooltip의 (?) 아이콘에 마우스를 올려도 커서가 변하지 않아 클릭 가능한지 불명확
+
+**해결**: `cursor-pointer` 클래스 추가
+
+```tsx
+// packages/web/src/components/help/HelpTooltip.tsx
+<button
+  type="button"
+  className={`... cursor-pointer ${className}`}
+>
+```
+
+### 14.3 개발 서버 다중 실행으로 인한 포트 충돌
+
+**문제**: 여러 개의 백그라운드 서버가 실행되어 포트 3000/5173 충돌 발생
+
+**증상**:
+- `Error: listen EADDRINUSE: address already in use :::3000`
+- 브라우저에서 빈 화면 표시
+- esbuild 관련 에러
+
+**해결**: 기존 프로세스 정리 후 재시작
+
+```bash
+# 포트 사용 프로세스 종료
+pkill -f "vite" 2>/dev/null
+pkill -f "bun.*server" 2>/dev/null
+lsof -ti:3000 | xargs kill -9 2>/dev/null
+lsof -ti:5173 | xargs kill -9 2>/dev/null
+
+# 서버 재시작
+bun run dev
+```
+
+**예방책**: 개발 서버 실행 전 기존 프로세스 확인
+
+```bash
+# 실행 중인 서버 확인
+lsof -i:3000
+lsof -i:5173
+```
+
+### 14.4 radix-ui/react-popover 설치
+
+**참고**: HelpTooltip에 shadcn/ui 스타일 Popover 사용
+
+```bash
+bun add @radix-ui/react-popover
+```
+
+**생성 파일**: `packages/web/src/components/ui/Popover.tsx`

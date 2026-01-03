@@ -5,7 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 import { useDecks, useDeckStats } from '../hooks/useDecks';
 import { api } from '../lib/api';
-import { Scissors, FolderOpen, FileStack, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
+import { Scissors, FolderOpen, FileStack, AlertTriangle, Sparkles, Loader2, RotateCcw } from 'lucide-react';
+import { HelpTooltip } from '../components/help/HelpTooltip';
+import { OnboardingTour } from '../components/onboarding/OnboardingTour';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ export function Dashboard() {
   const { data: decksData, isLoading: isLoadingDecks } = useDecks();
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
   const { data: stats, isLoading: isLoadingStats } = useDeckStats(selectedDeck);
+  const { isCompleted: onboardingCompleted, startOnboarding } = useOnboarding();
 
   // 임베딩 상태 조회
   const { data: embeddingStatus, isLoading: isLoadingEmbedding } = useQuery({
@@ -32,16 +36,27 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Onboarding Tour */}
+      <OnboardingTour />
+
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Anki 카드를 원자적 단위로 분할하세요
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Anki 카드를 원자적 단위로 분할하세요
+          </p>
+        </div>
+        {onboardingCompleted && (
+          <Button variant="ghost" size="sm" onClick={startOnboarding}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            가이드 다시 보기
+          </Button>
+        )}
       </div>
 
       {/* Deck Selector */}
-      <Card>
+      <Card data-tour="deck-selector">
         <CardHeader>
           <CardTitle className="text-lg">덱 선택</CardTitle>
         </CardHeader>
@@ -67,7 +82,7 @@ export function Dashboard() {
 
       {/* Stats Grid */}
       {selectedDeck && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" data-tour="stats-cards">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">총 노트</CardTitle>
@@ -82,7 +97,10 @@ export function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">분할 후보</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                분할 후보
+                <HelpTooltip helpKey="splitCandidate" />
+              </CardTitle>
               <Scissors className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -94,7 +112,10 @@ export function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Hard Split</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                Hard Split
+                <HelpTooltip helpKey="hardSplit" />
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
@@ -106,7 +127,10 @@ export function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Soft Split</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                Soft Split
+                <HelpTooltip helpKey="softSplit" />
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
@@ -119,7 +143,10 @@ export function Dashboard() {
           {/* 임베딩 상태 */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">임베딩</CardTitle>
+              <CardTitle className="text-sm font-medium flex items-center gap-1">
+                임베딩
+                <HelpTooltip helpKey="embeddingCoverage" />
+              </CardTitle>
               <Sparkles className="h-4 w-4 text-violet-500" />
             </CardHeader>
             <CardContent>
@@ -144,7 +171,7 @@ export function Dashboard() {
 
       {/* Quick Actions */}
       {selectedDeck && (
-        <Card>
+        <Card data-tour="quick-actions">
           <CardHeader>
             <CardTitle className="text-lg">빠른 작업</CardTitle>
           </CardHeader>

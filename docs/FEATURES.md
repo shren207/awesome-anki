@@ -420,3 +420,72 @@ const result = await checkSimilarity(targetCard, allCards, {
 - **같은 주제 카드**: 99% 유사도
 - **다른 주제 카드**: 79% 유사도
 - **Jaccard로 못 찾은 관련 카드**: 임베딩으로 탐지 성공
+
+---
+
+## 도움말 시스템
+
+사용자 경험(UX)을 위한 도움말 및 온보딩 기능
+
+### HelpTooltip 컴포넌트
+
+주요 기능 옆에 (?) 아이콘을 표시하고, 클릭 시 Popover로 설명 표시
+
+```tsx
+// 사용 예시
+<CardTitle className="flex items-center gap-1">
+  분할 후보
+  <HelpTooltip helpKey="splitCandidate" />
+</CardTitle>
+
+// helpContent.ts에서 콘텐츠 정의
+export const helpContent = {
+  splitCandidate: {
+    title: '분할 후보',
+    description: 'Hard Split 또는 Soft Split이 가능한 카드의 총 개수입니다.',
+    learnMore: '/help#split-candidate'
+  },
+  // ...
+};
+```
+
+**적용 위치**:
+- Dashboard: 분할 후보, Hard Split, Soft Split, 임베딩 커버리지
+- SplitWorkspace: 분할 후보 목록, 분할 미리보기
+- ValidationPanel: 각 검증 항목
+- CardBrowser: 검증 상태 아이콘
+
+### Help 페이지 (/help)
+
+전체 기능 설명을 제공하는 단일 페이지
+
+**페이지 구성**:
+1. 시작하기 (Getting Started)
+2. 기능별 가이드 (Dashboard, Split, Browse, Backups)
+3. 검증 기능 설명 (팩트체크, 최신성, 유사성, 문맥 일관성)
+4. 용어집 (Glossary) - 주요 용어 정의
+5. FAQ - 자주 묻는 질문
+6. 문제 해결 (Troubleshooting)
+
+### 온보딩 투어
+
+첫 방문 사용자를 위한 단계별 가이드 투어
+
+**라이브러리**: react-joyride
+
+**투어 단계** (7단계):
+1. 환영 메시지
+2. 덱 선택 (Dashboard)
+3. 통계 카드 확인
+4. 빠른 작업 버튼
+5. Split 페이지 안내
+6. Browse 페이지 안내
+7. Help 페이지 안내
+
+**상태 관리**:
+- localStorage: `anki-splitter-onboarding-completed`
+- "가이드 다시 보기" 버튼으로 재실행 가능
+
+**구현 파일**:
+- `packages/web/src/hooks/useOnboarding.ts`
+- `packages/web/src/components/onboarding/OnboardingTour.tsx`

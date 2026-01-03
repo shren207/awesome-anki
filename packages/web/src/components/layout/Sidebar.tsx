@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { LayoutDashboard, Scissors, FolderOpen, History } from 'lucide-react';
+import { LayoutDashboard, Scissors, FolderOpen, History, HelpCircle } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/split', icon: Scissors, label: 'Split' },
   { to: '/browse', icon: FolderOpen, label: 'Browse' },
   { to: '/backups', icon: History, label: 'Backups' },
+  { to: '/help', icon: HelpCircle, label: 'Help' },
 ];
 
 export function Sidebar() {
