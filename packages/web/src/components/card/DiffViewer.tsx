@@ -1,9 +1,10 @@
 /**
  * DiffViewer - 분할 전후 Diff 비교 컴포넌트
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '../../lib/utils';
-import { ArrowRight, Plus, Minus, Equal } from 'lucide-react';
+import { ArrowRight, Plus, Minus, Equal, Eye, Code } from 'lucide-react';
+import { ContentRenderer } from './ContentRenderer';
 
 interface DiffViewerProps {
   original: string;
@@ -161,22 +162,55 @@ interface SplitPreviewCardProps {
 }
 
 export function SplitPreviewCard({ card, index, className }: SplitPreviewCardProps) {
+  const [viewMode, setViewMode] = useState<'rendered' | 'raw'>('rendered');
+
   return (
     <div className={cn('border rounded-lg overflow-hidden', className)}>
       <div className="bg-muted px-3 py-2 border-b flex items-center justify-between">
         <span className="font-medium text-sm truncate">{card.title}</span>
-        {card.isMainCard ? (
-          <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded shrink-0 ml-2">
-            메인
-          </span>
-        ) : (
-          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded shrink-0 ml-2">
-            #{index + 1}
-          </span>
-        )}
+        <div className="flex items-center gap-2 shrink-0 ml-2">
+          {/* Raw/Rendered 토글 */}
+          <div className="flex rounded-md border overflow-hidden">
+            <button
+              onClick={() => setViewMode('rendered')}
+              className={cn(
+                'p-1 transition-colors',
+                viewMode === 'rendered' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              )}
+              title="렌더링"
+            >
+              <Eye className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => setViewMode('raw')}
+              className={cn(
+                'p-1 transition-colors',
+                viewMode === 'raw' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+              )}
+              title="Raw"
+            >
+              <Code className="w-3 h-3" />
+            </button>
+          </div>
+          {card.isMainCard ? (
+            <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded">
+              메인
+            </span>
+          ) : (
+            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-0.5 rounded">
+              #{index + 1}
+            </span>
+          )}
+        </div>
       </div>
-      <div className="p-3 text-sm max-h-40 overflow-y-auto">
-        <pre className="whitespace-pre-wrap break-words font-sans">{card.content.slice(0, 300)}{card.content.length > 300 ? '...' : ''}</pre>
+      <div className="p-3 text-sm max-h-60 overflow-y-auto">
+        {viewMode === 'rendered' ? (
+          <ContentRenderer content={card.content} showToggle={false} defaultView="rendered" />
+        ) : (
+          <pre className="whitespace-pre-wrap break-words font-mono text-xs bg-muted p-2 rounded">
+            {card.content}
+          </pre>
+        )}
       </div>
     </div>
   );
