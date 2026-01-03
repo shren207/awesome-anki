@@ -13,7 +13,7 @@
 |------|------|------|
 | CLI 기능 | ✅ 완료 | status, split, analyze, rollback, backups |
 | 웹 API | ✅ 완료 | decks, cards, split, backup 라우트 |
-| 웹 GUI | 🔄 진행중 | Phase 3 완료, Phase 4-5 남음 |
+| 웹 GUI | 🔄 진행중 | Phase 4 완료, Phase 5 남음 |
 
 ---
 
@@ -69,31 +69,14 @@
 - [x] useSplitPreview, useSplitApply 훅
 - [x] CSS 클래스 충돌 해결 (.container → .callout)
 
----
-
-## 진행 중인 작업
-
-### 웹 GUI Phase 4: 롤백 관리 🔄
-
-**목표**: 백업 목록 조회 및 롤백 실행 UI
-
-**필요한 작업**:
-1. [ ] BackupManager 페이지 구현
-   - [ ] 백업 목록 테이블
-   - [ ] 백업 상세 정보 (시간, 원본 noteId, 생성된 카드 수)
-   - [ ] 롤백 버튼 + 확인 다이얼로그
-   - [ ] 롤백 성공/실패 피드백
-
-2. [ ] App.tsx에서 BackupManager import
-
-**관련 파일**:
-- `packages/web/src/pages/BackupManager.tsx` (신규)
-- `packages/web/src/hooks/useBackups.ts` (이미 생성됨)
-- `packages/server/src/routes/backup.ts` (이미 구현됨)
-
-**API 엔드포인트** (이미 구현됨):
-- `GET /api/backup` - 백업 목록
-- `POST /api/backup/:id/rollback` - 롤백 실행
+### 웹 GUI Phase 4: 롤백 관리 ✅
+- [x] BackupManager 페이지 구현
+- [x] 백업 목록 카드 UI (시간, 원본 noteId, 생성된 카드 수)
+- [x] 롤백 버튼 + 확인 다이얼로그
+- [x] 롤백 성공/실패 피드백
+- [x] useBackups, useRollback 훅
+- [x] ContentRenderer <br> 태그 처리 개선
+- [x] Hard Split 기준 수정 (#### 헤더만, --- 구분선 제외)
 
 ---
 
@@ -127,7 +110,13 @@
 
 ### 기타 미구현 기능 📋
 
-1. [ ] **전체 Soft Split**
+1. [ ] **ContentRenderer 파싱 문제**
+   - 원본 카드의 렌더링된 뷰에서 파싱이 정상적으로 적용되지 않음
+   - 증상: ::: 컨테이너, nid 링크 등이 제대로 렌더링되지 않음
+   - 원인: ReactMarkdown + rehypeRaw 조합에서 복잡한 HTML 처리 문제
+   - 관련 파일: `packages/web/src/components/card/ContentRenderer.tsx`
+
+2. [ ] **전체 Soft Split**
    - 현재: 5개 후보만 분석 (API 비용 고려)
    - 개선: 전체 후보 분석 옵션 추가
 
@@ -167,22 +156,23 @@
 
 ## 다음 세션에서 할 작업
 
-### 즉시 가능한 작업 (Phase 4)
+### 우선순위 높음 🔴
+
+1. **ContentRenderer 파싱 문제 수정**
+   - 증상: ::: 컨테이너, nid 링크가 제대로 렌더링되지 않음
+   - 원인: ReactMarkdown + 복잡한 HTML 혼합 처리 문제
+   - 관련 파일: `packages/web/src/components/card/ContentRenderer.tsx`
+
+### Phase 5 (카드 검증)
 
 ```typescript
-// packages/web/src/pages/BackupManager.tsx 구현
-
-// 1. useBackups 훅 사용 (이미 생성됨)
-const { data, isLoading } = useBackups();
-const rollback = useRollback();
-
-// 2. 백업 목록 테이블 렌더링
-// 3. 롤백 버튼 + 확인 다이얼로그
-// 4. App.tsx에서 import 변경
+// packages/core/src/validator/ 모듈 구현
+// packages/server/src/routes/validate.ts API 추가
+// ValidationPanel 컴포넌트 구현
 ```
 
 ### 예상 소요 시간
-- Phase 4 (BackupManager): 30분
+- ContentRenderer 파싱 문제: 1시간
 - Phase 5 (카드 검증): 2-3시간
 
 ---

@@ -80,17 +80,21 @@ export function analyzeForSplit(htmlContent: string): SplitAnalysis {
   // Cloze 수 계산
   const clozes = parseClozes(htmlContent);
 
+  // Hard Split은 #### 헤더가 있을 때만 가능 (--- 구분선은 분할 기준으로 사용하지 않음)
+  const headerCount = hardSplitPoints.filter((p) => p.type === 'header').length;
+
   return {
-    canHardSplit: hardSplitPoints.length > 0,
+    canHardSplit: headerCount >= 2, // 최소 2개 이상의 헤더가 있어야 분할 가능
     hardSplitPoints,
     hasTodoBlock,
     clozeCount: clozes.length,
-    estimatedCards: Math.max(1, hardSplitPoints.filter((p) => p.type === 'header').length),
+    estimatedCards: Math.max(1, headerCount),
   };
 }
 
 /**
  * Hard Split 수행 (정규식 기반)
+ * #### 헤더로만 분할 (--- 구분선은 분할 기준으로 사용하지 않음)
  */
 export function performHardSplit(
   htmlContent: string,
@@ -114,7 +118,7 @@ export function performHardSplit(
     const line = lines[i];
     const trimmed = line.trim();
 
-    // 새 헤더 발견
+    // 새 헤더 발견 (#### 패턴)
     if (HEADER_PATTERN.test(trimmed)) {
       // 이전 섹션 저장
       if (currentSection.length > 0) {

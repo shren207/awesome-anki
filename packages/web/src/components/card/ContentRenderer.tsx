@@ -80,6 +80,21 @@ function processContainers(text: string): string {
   return result.join('\n');
 }
 
+/**
+ * HTML 태그를 마크다운/HTML 호환 형식으로 변환
+ */
+function preprocessAnkiHtml(text: string): string {
+  let processed = text;
+
+  // <br> 태그를 줄바꿈으로 변환
+  processed = processed.replace(/<br\s*\/?>/gi, '\n');
+
+  // &nbsp;를 일반 공백으로 변환
+  processed = processed.replace(/&nbsp;/gi, ' ');
+
+  return processed;
+}
+
 export function ContentRenderer({
   content,
   className,
@@ -90,6 +105,7 @@ export function ContentRenderer({
 
   const processedContent = useMemo(() => {
     let processed = content;
+    processed = preprocessAnkiHtml(processed);
     processed = processCloze(processed, true);
     processed = processContainers(processed);
     return processed;

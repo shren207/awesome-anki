@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { ContentRenderer } from '../components/card/ContentRenderer';
 import { DiffViewer, SplitPreviewCard } from '../components/card/DiffViewer';
 import { useDecks } from '../hooks/useDecks';
-import { useCards } from '../hooks/useCards';
+import { useCards, useCardDetail } from '../hooks/useCards';
 import { useSplitPreview, useSplitApply } from '../hooks/useSplit';
 import { cn } from '../lib/utils';
 import {
@@ -41,6 +41,11 @@ export function SplitWorkspace() {
     limit: 100,
     filter: 'split_candidates',
   });
+
+  // 선택된 카드의 상세 정보 (전체 텍스트 포함)
+  const { data: cardDetail, isLoading: isLoadingDetail } = useCardDetail(
+    selectedCard?.noteId ?? null
+  );
 
   const splitPreview = useSplitPreview();
   const splitApply = useSplitApply();
@@ -184,8 +189,8 @@ export function SplitWorkspace() {
         </div>
 
         {/* 중앙: 원본 카드 */}
-        <div className="col-span-5 flex flex-col min-h-0">
-          <Card className="flex-1 flex flex-col min-h-0">
+        <div className="col-span-5 flex flex-col min-h-0 overflow-hidden">
+          <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <CardHeader className="py-3 px-4 border-b shrink-0 flex flex-row items-center justify-between">
               <CardTitle className="text-sm">원본 카드</CardTitle>
               {selectedCard && (
@@ -194,13 +199,19 @@ export function SplitWorkspace() {
                 </span>
               )}
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto p-4">
+            <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
               {selectedCard ? (
-                <ContentRenderer
-                  content={selectedCard.text}
-                  showToggle={true}
-                  defaultView="rendered"
-                />
+                isLoadingDetail ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <ContentRenderer
+                    content={cardDetail?.text || selectedCard.text}
+                    showToggle={true}
+                    defaultView="rendered"
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <div className="text-center">

@@ -185,7 +185,105 @@ lsof -ti:3000 | xargs kill -9
 
 ---
 
-## 10. 디버깅 팁
+## 10. Phase 4 이슈 및 해결
+
+### 10.1 원본 카드 텍스트 말줄임 문제
+
+**문제**: SplitWorkspace에서 원본 카드 텍스트가 `...`으로 잘려서 표시됨
+
+**원인**: `GET /api/cards/deck/:name` API에서 목록 조회 시 성능을 위해 텍스트를 200자로 잘라서 반환
+
+```typescript
+// packages/server/src/routes/cards.ts 라인 39
+text: text.slice(0, 200) + (text.length > 200 ? '...' : ''),
+```
+
+**해결**: 카드 선택 시 `useCardDetail` 훅으로 상세 API 호출하여 전체 텍스트 가져오기
+
+```typescript
+// packages/web/src/pages/SplitWorkspace.tsx
+const { data: cardDetail, isLoading: isLoadingDetail } = useCardDetail(
+  selectedCard?.noteId ?? null
+);
+
+// ContentRenderer에 전체 텍스트 전달
+<ContentRenderer content={cardDetail?.text || selectedCard.text} />
+```
+
+### 10.2 Hard Split 기준 문제
+
+**문제**: `---` 구분선이 분석에서 Hard Split 가능으로 감지되지만, 실제로 사용자는 `---`를 카드 분할 용도로 사용하지 않음
+
+**이전 로직**:
+- `canHardSplit`: `---` 또는 `####` 헤더가 있으면 true
+- 실제 분할: `####` 헤더로만 분할
+
+**수정된 로직**:
+- `canHardSplit`: `####` 헤더가 **2개 이상** 있을 때만 true
+- `---` 구분선은 Hard Split 기준에서 완전히 제외
+
+```typescript
+// packages/core/src/splitter/atomic-converter.ts
+const headerCount = hardSplitPoints.filter((p) => p.type === 'header').length;
+return {
+  canHardSplit: headerCount >= 2, // 최소 2개 이상의 헤더 필요
+  // ...
+};
+```
+
+**참고**: Hard Split은 거의 사용되지 않을 것으로 예상됨. Soft Split (Gemini) 위주로 사용 권장.
+
+### 10.3 ContentRenderer <br> 태그 처리
+
+**문제**: Anki 카드의 `<br>` 태그가 ReactMarkdown에서 제대로 렌더링되지 않음
+
+**해결**: `preprocessAnkiHtml` 함수 추가하여 `<br>` 태그를 줄바꿈으로 변환
+
+```typescript
+// packages/web/src/components/card/ContentRenderer.tsx
+function preprocessAnkiHtml(text: string): string {
+  let processed = text;
+  processed = processed.replace(/<br\s*\/?>/gi, '\n');
+  processed = processed.replace(/&nbsp;/gi, ' ');
+  return processed;
+}
+```
+
+### 10.4 레이아웃 스크롤 문제
+
+**문제**: 원본 카드 영역에서 스크롤이 작동하지 않음
+
+**원인**: flex 컨테이너에서 `min-h-0`가 없으면 overflow가 제대로 작동하지 않음
+
+**해결**: 부모 컨테이너에 `overflow-hidden`과 `min-h-0` 추가
+
+```tsx
+<div className="col-span-5 flex flex-col min-h-0 overflow-hidden">
+  <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
+```
+
+### 10.5 ContentRenderer 파싱 문제 (미해결)
+
+**문제**: 원본 카드의 렌더링된 뷰에서 ::: 컨테이너, nid 링크 등이 제대로 표시되지 않음
+
+**증상**:
+- `::: link`, `::: toggle` 등 컨테이너가 스타일 없이 표시
+- `[제목|nid...]` 형식의 nid 링크가 파싱되지 않음
+- HTML과 마크다운이 혼합된 내용이 깨짐
+
+**원인 추정**:
+- ReactMarkdown + rehypeRaw 조합에서 복잡한 HTML/마크다운 혼합 처리 문제
+- `processContainers`, `processCloze` 함수의 처리 순서 문제
+- Anki 카드의 `<br>` 태그와 마크다운 줄바꿈 충돌
+
+**관련 파일**: `packages/web/src/components/card/ContentRenderer.tsx`
+
+**상태**: 추후 해결 필요 (TODO 참고)
+
+---
+
+## 11. 디버깅 팁
 
 ### 10.1 API 응답 확인
 ```bash

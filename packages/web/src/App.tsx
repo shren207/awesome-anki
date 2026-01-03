@@ -4,6 +4,7 @@ import { Layout } from './components/layout/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { CardBrowser } from './pages/CardBrowser';
 import { SplitWorkspace } from './pages/SplitWorkspace';
+import { BackupManager } from './pages/BackupManager';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -13,15 +14,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-function BackupManager() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold">백업 관리</h1>
-      <p className="text-muted-foreground">Phase 4에서 구현 예정</p>
-    </div>
-  );
-}
 
 export default function App() {
   return (
