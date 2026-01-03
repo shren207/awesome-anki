@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { CardBrowser } from './pages/CardBrowser';
+import { SplitWorkspace } from './pages/SplitWorkspace';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,16 +13,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// Placeholder pages
-function SplitWorkspace() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold">분할 작업</h1>
-      <p className="text-muted-foreground">Phase 3에서 구현 예정</p>
-    </div>
-  );
-}
 
 function BackupManager() {
   return (

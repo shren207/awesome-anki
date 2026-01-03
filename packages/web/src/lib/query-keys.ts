@@ -14,7 +14,10 @@ export const queryKeys = {
       ['split', 'preview', noteId, useGemini] as const,
   },
 
-  backups: ['backups'] as const,
+  backups: {
+    all: ['backups'] as const,
+    detail: (id: string) => ['backups', id] as const,
+  },
 
   health: ['health'] as const,
 };

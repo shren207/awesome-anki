@@ -94,3 +94,97 @@ body {
     border-color: hsl(var(--border));
   }
 }
+
+/* Cloze 스타일 */
+.cloze {
+  background-color: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  padding: 0.1em 0.3em;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.cloze-hidden {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+/* 컨테이너 스타일 */
+.container {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border-left: 4px solid;
+}
+
+.container-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.container-tip {
+  background-color: hsl(142 76% 36% / 0.1);
+  border-color: hsl(142 76% 36%);
+}
+
+.container-warning {
+  background-color: hsl(38 92% 50% / 0.1);
+  border-color: hsl(38 92% 50%);
+}
+
+.container-error {
+  background-color: hsl(0 84% 60% / 0.1);
+  border-color: hsl(0 84% 60%);
+}
+
+.container-note {
+  background-color: hsl(221 83% 53% / 0.1);
+  border-color: hsl(221 83% 53%);
+}
+
+.container-link {
+  background-color: hsl(262 83% 58% / 0.1);
+  border-color: hsl(262 83% 58%);
+}
+
+.container-toggle {
+  background-color: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+
+.container-toggle summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* Prose 커스텀 */
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose table {
+  font-size: 0.875rem;
+}
+
+.prose code {
+  background-color: hsl(var(--muted));
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Diff 스타일 */
+.diff-added {
+  background-color: hsl(142 76% 36% / 0.2);
+}
+
+.diff-removed {
+  background-color: hsl(0 84% 60% / 0.2);
+  text-decoration: line-through;
+}
