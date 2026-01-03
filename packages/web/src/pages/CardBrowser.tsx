@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { ContentRenderer } from '../components/card/ContentRenderer';
 import { useDecks } from '../hooks/useDecks';
 import { useCards, useCardDetail } from '../hooks/useCards';
 import { useValidationCache, useValidateCard } from '../hooks/useValidationCache';
@@ -321,10 +322,9 @@ export function CardBrowser() {
 
             <div>
               <h4 className="text-sm font-medium">내용</h4>
-              <div
-                className="max-h-64 overflow-auto rounded border bg-muted/50 p-2 text-xs"
-                dangerouslySetInnerHTML={{ __html: cardDetail.text }}
-              />
+              <div className="max-h-64 overflow-auto rounded border bg-muted/50 p-2 text-sm">
+                <ContentRenderer content={cardDetail.text} />
+              </div>
             </div>
           </CardContent>
         </Card>
