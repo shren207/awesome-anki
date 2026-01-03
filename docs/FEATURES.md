@@ -28,10 +28,11 @@ anki-claude-code/
 │   ├── core/           # 핵심 로직 (CLI + 웹 공용)
 │   │   └── src/
 │   │       ├── anki/       # AnkiConnect API 래퍼
-│   │       ├── gemini/     # Gemini API 호출
+│   │       ├── gemini/     # Gemini API 호출 (분할)
+│   │       ├── embedding/  # Gemini 임베딩 API (유사도)
 │   │       ├── parser/     # 텍스트 파싱
 │   │       ├── splitter/   # 분할 로직
-│   │       ├── validator/  # 카드 검증 (fact-check, freshness, similarity)
+│   │       ├── validator/  # 카드 검증 (fact-check, freshness, similarity, context)
 │   │       └── utils/      # 유틸리티
 │   │
 │   ├── server/         # Hono REST API
@@ -46,7 +47,8 @@ anki-claude-code/
 │           └── hooks/
 │
 ├── src/                # CLI 진입점 (하위 호환)
-└── output/backups/     # 분할 백업 저장소
+├── output/backups/     # 분할 백업 저장소
+└── output/embeddings/  # 임베딩 캐시 파일
 ```
 
 ---
@@ -215,9 +217,17 @@ interface ClozeItem {
 |--------|------|------|
 | POST | /api/validate/fact-check | 카드 내용 팩트 체크 |
 | POST | /api/validate/freshness | 기술 최신성 검사 |
-| POST | /api/validate/similarity | 유사/중복 카드 탐지 |
+| POST | /api/validate/similarity | 유사/중복 카드 탐지 (useEmbedding 옵션) |
 | POST | /api/validate/context | nid 링크 연결 카드 간 문맥 일관성 검사 |
 | POST | /api/validate/all | 전체 검증 (병렬 실행) |
+
+### Embedding
+| Method | Path | 설명 |
+|--------|------|------|
+| POST | /api/embedding/generate | 덱 전체 임베딩 생성 (증분) |
+| GET | /api/embedding/status/:deckName | 임베딩 캐시 상태 확인 |
+| DELETE | /api/embedding/cache/:deckName | 임베딩 캐시 삭제 |
+| POST | /api/embedding/single | 단일 텍스트 임베딩 (디버깅) |
 
 ---
 
@@ -349,3 +359,64 @@ bun run cli backups
 # 롤백
 bun run cli rollback [backupId]
 ```
+
+---
+
+## 임베딩 모듈 (packages/core/src/embedding/)
+
+Gemini 임베딩 API를 사용한 의미 기반 유사도 검사
+
+### 기술 스택
+- **모델**: `gemini-embedding-001` (GA, MTEB 상위권)
+- **차원**: 768 (기본값)
+- **입력 한도**: 8K 토큰
+
+### 주요 함수
+
+```typescript
+// 단일 텍스트 임베딩
+const embedding = await getEmbedding(text);
+// 결과: number[] (768차원)
+
+// 의미적 유사도 계산
+const similarity = await getSemanticSimilarity(text1, text2);
+// 결과: 0-100 (%)
+
+// 유사성 검사 (임베딩 사용)
+const result = await checkSimilarity(targetCard, allCards, {
+  useEmbedding: true,
+  deckName: '덱 이름',
+  threshold: 85,
+});
+```
+
+### 텍스트 전처리
+
+임베딩 생성 전 텍스트 정리:
+- Cloze 구문에서 내용만 추출 (`{{c1::DNS}}` → `DNS`)
+- HTML 태그 제거
+- 컨테이너 구문 제거 (`::: tip` 등)
+- nid 링크에서 제목만 추출
+
+### 캐시
+
+- **저장 위치**: `output/embeddings/{deckNameHash}.json`
+- **구조**: `{ [noteId]: { embedding, textHash, timestamp } }`
+- **증분 업데이트**: 텍스트 변경된 카드만 재생성
+- **변경 감지**: MD5 해시로 텍스트 변경 확인
+
+### Jaccard vs 임베딩
+
+| 비교 항목 | Jaccard | 임베딩 |
+|----------|---------|--------|
+| 방식 | 단어 집합 + 2-gram | 의미 벡터 |
+| 속도 | 빠름 (로컬) | 느림 (API 호출) |
+| 정확도 | 표면적 유사도 | 의미적 유사도 |
+| 기본 threshold | 70% | 85% |
+| 캐시 | 없음 | 파일 기반 |
+
+### 테스트 결과 (DNS 카드 기준)
+
+- **같은 주제 카드**: 99% 유사도
+- **다른 주제 카드**: 79% 유사도
+- **Jaccard로 못 찾은 관련 카드**: 임베딩으로 탐지 성공

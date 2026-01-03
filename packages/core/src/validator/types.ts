@@ -59,6 +59,8 @@ export interface SimilarityResult extends ValidationResult {
   details: {
     similarCards: SimilarCard[];
     isDuplicate: boolean;
+    /** 사용된 유사도 검사 방식 */
+    method?: 'jaccard' | 'embedding';
   };
 }
 

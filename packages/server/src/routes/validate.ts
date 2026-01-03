@@ -97,14 +97,17 @@ validate.post('/freshness', async (c) => {
 /**
  * POST /api/validate/similarity
  * 카드 유사성 검사
+ *
+ * @param useEmbedding - true: Gemini 임베딩 + 코사인 유사도, false: Jaccard (기본)
  */
 validate.post('/similarity', async (c) => {
   try {
-    const { noteId, deckName, threshold, maxResults } = await c.req.json<{
+    const { noteId, deckName, threshold, maxResults, useEmbedding } = await c.req.json<{
       noteId: number;
       deckName: string;
       threshold?: number;
       maxResults?: number;
+      useEmbedding?: boolean;
     }>();
 
     if (!noteId || !deckName) {
@@ -126,11 +129,11 @@ validate.post('/similarity', async (c) => {
       text: extractTextField(n),
     }));
 
-    // 유사성 검사 수행
+    // 유사성 검사 수행 (임베딩 옵션 지원)
     const result = await checkSimilarity(
       { noteId, text: targetText },
       allCards,
-      { threshold, maxResults }
+      { threshold, maxResults, useEmbedding, deckName }
     );
 
     return c.json({

@@ -128,54 +128,48 @@
 - [x] API 라우트 추가 (POST /api/validate/context)
 - [x] ValidationPanel UI 통합
 
-**4. 임베딩 기반 유사성 검사** 📋
+**4. 임베딩 기반 유사성 검사** ✅
 
-> 현재: Jaccard 유사도 (단어 집합 + 2-gram 비교)
-> 목표: Gemini 임베딩 + 코사인 유사도로 의미 기반 검사
+> Gemini 임베딩 + 코사인 유사도로 의미 기반 검사 (Jaccard도 유지)
 
-**기술 스택**
-- 모델: `gemini-embedding-001` (GA, MTEB 상위권)
-- 차원: 768 (저장 공간 고려, 3072에서 축소 가능)
-- 입력 한도: 8K 토큰
-- 참고: https://ai.google.dev/gemini-api/docs/embeddings
+**구현 완료 (2026-01-03)**
 
 **Step 1: 임베딩 모듈 (packages/core/src/embedding/)**
-- [ ] `client.ts` - Gemini 임베딩 API 클라이언트
+- [x] `client.ts` - Gemini 임베딩 API 클라이언트
   - `getEmbedding(text: string): Promise<number[]>`
   - `getEmbeddings(texts: string[]): Promise<number[][]>` (배치)
-  - 텍스트 전처리 (Cloze, HTML, 컨테이너 제거)
-- [ ] `cosine.ts` - 코사인 유사도 계산
+  - `preprocessTextForEmbedding()` - Cloze, HTML, 컨테이너 제거
+- [x] `cosine.ts` - 코사인 유사도 계산
   - `cosineSimilarity(vec1, vec2): number` (0-100)
-- [ ] `cache.ts` - 파일 기반 임베딩 캐시
+  - `normalizeVector()`, `fastCosineSimilarity()` (정규화된 벡터용)
+- [x] `cache.ts` - 파일 기반 임베딩 캐시
   - 저장 위치: `output/embeddings/{deckNameHash}.json`
   - 구조: `{ [noteId]: { embedding, textHash, timestamp } }`
   - 증분 업데이트 (텍스트 변경된 카드만 재생성)
-- [ ] `index.ts` - 모듈 export
+- [x] `index.ts` - 모듈 export
 
 **Step 2: similarity-checker.ts 수정**
-- [ ] `SimilarityCheckOptions`에 `useEmbedding?: boolean` 추가
-- [ ] 임베딩 기반 검사 로직 구현 (코사인 유사도)
-- [ ] 기존 Jaccard 로직 유지 (하위 호환)
-- [ ] threshold 기본값 조정 (임베딩: 85, Jaccard: 70)
+- [x] `SimilarityCheckOptions`에 `useEmbedding?: boolean` 추가
+- [x] 임베딩 기반 검사 로직 구현 (코사인 유사도)
+- [x] 기존 Jaccard 로직 유지 (하위 호환)
+- [x] threshold 기본값 조정 (임베딩: 85, Jaccard: 70)
 
-**Step 3: API 라우트 수정**
-- [ ] POST /api/embedding/generate - 덱 전체 임베딩 생성 (백그라운드)
-- [ ] GET /api/embedding/status/:deckName - 임베딩 상태 확인
-- [ ] /api/validate/similarity에 `useEmbedding` 파라미터 추가
+**Step 3: API 라우트**
+- [x] POST /api/embedding/generate - 덱 전체 임베딩 생성
+- [x] GET /api/embedding/status/:deckName - 임베딩 상태 확인
+- [x] DELETE /api/embedding/cache/:deckName - 캐시 삭제
+- [x] POST /api/embedding/single - 단일 텍스트 임베딩 (디버깅용)
+- [x] /api/validate/similarity에 `useEmbedding` 파라미터 추가
 
-**Step 4: 웹 UI (선택)**
+**Step 4: 웹 UI (미구현 - 선택)**
 - [ ] 덱 통계에 임베딩 상태 표시
 - [ ] 임베딩 생성 버튼 (시간 소요 경고)
 - [ ] 검증 옵션에 Jaccard/임베딩 선택
 
-**성능 고려사항**
-- 배치 처리: API 호출 최소화 (한 번에 여러 텍스트 임베딩)
-- 증분 업데이트: 새 카드/변경된 카드만 임베딩
-- 캐시 무효화: 텍스트 MD5 해시로 변경 감지
-
-**예상 API 비용 (262개 노트 기준)**
-- 임베딩 1회 생성: ~262 API 호출 (배치 시 감소)
-- 이후 검증: 캐시 사용 (API 호출 없음)
+**테스트 결과**
+- 단위 테스트: 25개 모두 통과
+- 통합 테스트: DNS 카드끼리 99% 유사도, 다른 주제와 79%
+- Jaccard vs 임베딩: 임베딩이 의미적으로 관련된 카드 더 잘 탐지
 
 ### 기타 미구현 기능 📋
 
@@ -204,6 +198,7 @@
 - [ ] 로딩 상태 스켈레톤 UI 추가
 
 ### 테스트
+- [x] 임베딩 모듈 단위 테스트 (25개 통과)
 - [ ] 파서 단위 테스트
 - [ ] API 통합 테스트
 - [ ] E2E 테스트 (Playwright?)
@@ -219,28 +214,21 @@
 
 ## 다음 세션에서 할 작업
 
-### 임베딩 기반 유사성 검사 구현 🎯
+### 웹 UI 임베딩 기능 통합 (선택)
 
-**1단계: 임베딩 모듈 생성**
-```
-packages/core/src/embedding/
-├── client.ts      # Gemini 임베딩 API
-├── cosine.ts      # 코사인 유사도
-├── cache.ts       # 파일 기반 캐시
-└── index.ts       # export
-```
+임베딩 백엔드가 완성되었으므로, 필요시 웹 UI에 통합:
 
-**2단계: similarity-checker 수정**
-- `useEmbedding` 옵션 추가
-- 코사인 유사도 기반 검사
+1. **덱 통계에 임베딩 상태 표시**
+   - 캐시된 임베딩 수 / 전체 노트 수
+   - 커버리지 퍼센트
 
-**3단계: API 라우트 추가**
-- POST /api/embedding/generate
-- GET /api/embedding/status/:deckName
+2. **임베딩 생성 버튼**
+   - "임베딩 생성" 버튼 추가
+   - 진행 상태 표시 (시간 소요 경고)
 
-**참고**: 상세 계획은 Phase 6 > **4. 임베딩 기반 유사성 검사** 섹션 참조
-
----
+3. **검증 옵션에 Jaccard/임베딩 선택**
+   - ValidationPanel에 토글 추가
+   - 임베딩 캐시 없으면 Jaccard 자동 폴백
 
 ### 기타 (낮은 우선순위)
 
@@ -280,6 +268,8 @@ packages/web/src/hooks/         # React Query 훅
 packages/server/src/routes/     # API 라우트
 packages/core/src/              # 핵심 로직
 packages/core/src/validator/    # 검증 모듈
+packages/core/src/embedding/    # 임베딩 모듈 (Gemini)
+output/embeddings/              # 임베딩 캐시 파일
 ```
 
 ### API 엔드포인트 목록
@@ -295,5 +285,10 @@ packages/core/src/validator/    # 검증 모듈
 | POST | /api/backup/:id/rollback | 롤백 |
 | POST | /api/validate/fact-check | 팩트 체크 |
 | POST | /api/validate/freshness | 최신성 검사 |
-| POST | /api/validate/similarity | 유사성 검사 |
+| POST | /api/validate/similarity | 유사성 검사 (useEmbedding 옵션) |
+| POST | /api/validate/context | 문맥 일관성 검사 |
 | POST | /api/validate/all | 전체 검증 |
+| POST | /api/embedding/generate | 덱 전체 임베딩 생성 |
+| GET | /api/embedding/status/:deckName | 임베딩 캐시 상태 |
+| DELETE | /api/embedding/cache/:deckName | 임베딩 캐시 삭제 |
+| POST | /api/embedding/single | 단일 텍스트 임베딩 (디버깅) |

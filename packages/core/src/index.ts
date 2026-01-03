@@ -106,3 +106,6 @@ export {
 
 // Validator exports
 export * from './validator/index.js';
+
+// Embedding exports
+export * from './embedding/index.js';

@@ -1,11 +1,24 @@
 /**
  * 유사성 검사 - 중복/유사 카드 탐지
  *
- * 간단한 텍스트 유사도 기반 구현
- * TODO: Gemini 임베딩 API로 확장 가능
+ * 두 가지 방식 지원:
+ * 1. Jaccard 유사도 (기본): 단어 집합 + 2-gram 비교
+ * 2. 임베딩 기반 (useEmbedding: true): Gemini 임베딩 + 코사인 유사도
  */
 
 import type { SimilarityResult, SimilarCard } from './types.js';
+import {
+  getEmbedding,
+  preprocessTextForEmbedding,
+  loadCache,
+  saveCache,
+  createCache,
+  getCachedEmbedding,
+  setCachedEmbedding,
+  getTextHash,
+  type EmbeddingCache,
+} from '../embedding/index.js';
+import { cosineSimilarity } from '../embedding/cosine.js';
 
 export interface CardForComparison {
   noteId: number;
@@ -13,8 +26,14 @@ export interface CardForComparison {
 }
 
 export interface SimilarityCheckOptions {
-  threshold?: number; // 유사도 임계값 (기본: 70)
-  maxResults?: number; // 최대 결과 수 (기본: 5)
+  /** 유사도 임계값 (Jaccard: 70, 임베딩: 85) */
+  threshold?: number;
+  /** 최대 결과 수 (기본: 5) */
+  maxResults?: number;
+  /** 임베딩 기반 검사 사용 여부 */
+  useEmbedding?: boolean;
+  /** 덱 이름 (임베딩 캐시용) */
+  deckName?: string;
 }
 
 /**
@@ -86,6 +105,23 @@ export async function checkSimilarity(
   allCards: CardForComparison[],
   options: SimilarityCheckOptions = {}
 ): Promise<SimilarityResult> {
+  // 임베딩 기반 검사
+  if (options.useEmbedding) {
+    return checkSimilarityWithEmbedding(targetCard, allCards, options);
+  }
+
+  // Jaccard 기반 검사 (기본)
+  return checkSimilarityWithJaccard(targetCard, allCards, options);
+}
+
+/**
+ * Jaccard 유사도 기반 검사
+ */
+async function checkSimilarityWithJaccard(
+  targetCard: CardForComparison,
+  allCards: CardForComparison[],
+  options: SimilarityCheckOptions
+): Promise<SimilarityResult> {
   const threshold = options.threshold ?? 70;
   const maxResults = options.maxResults ?? 5;
 
@@ -109,14 +145,99 @@ export async function checkSimilarity(
     }
   }
 
+  return buildSimilarityResult(similarCards, maxResults, 'jaccard');
+}
+
+/**
+ * 임베딩 기반 유사도 검사
+ */
+async function checkSimilarityWithEmbedding(
+  targetCard: CardForComparison,
+  allCards: CardForComparison[],
+  options: SimilarityCheckOptions
+): Promise<SimilarityResult> {
+  const threshold = options.threshold ?? 85; // 임베딩은 기본 85%
+  const maxResults = options.maxResults ?? 5;
+  const deckName = options.deckName ?? 'default';
+
+  // 캐시 로드 또는 생성
+  let cache = loadCache(deckName);
+  if (!cache) {
+    cache = createCache(deckName, 768);
+  }
+
+  // 타겟 카드 임베딩
+  const targetTextHash = getTextHash(targetCard.text);
+  let targetEmbedding = getCachedEmbedding(cache, targetCard.noteId, targetTextHash);
+
+  if (!targetEmbedding) {
+    try {
+      targetEmbedding = await getEmbedding(targetCard.text);
+      setCachedEmbedding(cache, targetCard.noteId, targetEmbedding, targetTextHash);
+    } catch (error) {
+      // 임베딩 실패 시 Jaccard로 폴백
+      console.warn(`임베딩 생성 실패, Jaccard로 폴백: ${error}`);
+      return checkSimilarityWithJaccard(targetCard, allCards, {
+        ...options,
+        useEmbedding: false,
+      });
+    }
+  }
+
+  const similarCards: SimilarCard[] = [];
+
+  // 모든 카드와 비교
+  for (const card of allCards) {
+    if (card.noteId === targetCard.noteId) continue;
+
+    const cardTextHash = getTextHash(card.text);
+    let cardEmbedding = getCachedEmbedding(cache, card.noteId, cardTextHash);
+
+    if (!cardEmbedding) {
+      try {
+        cardEmbedding = await getEmbedding(card.text);
+        setCachedEmbedding(cache, card.noteId, cardEmbedding, cardTextHash);
+      } catch (error) {
+        console.warn(`카드 ${card.noteId} 임베딩 실패, 스킵`);
+        continue;
+      }
+    }
+
+    // 코사인 유사도 계산
+    const similarity = cosineSimilarity(targetEmbedding, cardEmbedding);
+
+    if (similarity >= threshold) {
+      similarCards.push({
+        noteId: card.noteId,
+        similarity,
+        matchedContent: card.text.slice(0, 100) + (card.text.length > 100 ? '...' : ''),
+      });
+    }
+  }
+
+  // 캐시 저장
+  saveCache(cache);
+
+  return buildSimilarityResult(similarCards, maxResults, 'embedding');
+}
+
+/**
+ * 유사도 결과 생성
+ */
+function buildSimilarityResult(
+  similarCards: SimilarCard[],
+  maxResults: number,
+  method: 'jaccard' | 'embedding'
+): SimilarityResult {
   // 유사도 높은 순으로 정렬
   similarCards.sort((a, b) => b.similarity - a.similarity);
 
   // 최대 결과 수 제한
   const topSimilar = similarCards.slice(0, maxResults);
 
-  // 중복 여부 판단 (90% 이상이면 중복으로 간주)
-  const isDuplicate = topSimilar.some(c => c.similarity >= 90);
+  // 중복 여부 판단 (95% 이상이면 중복으로 간주 - 임베딩에서 더 엄격)
+  const duplicateThreshold = method === 'embedding' ? 95 : 90;
+  const isDuplicate = topSimilar.some(c => c.similarity >= duplicateThreshold);
 
   // 상태 결정
   let status: SimilarityResult['status'] = 'valid';
@@ -137,6 +258,7 @@ export async function checkSimilarity(
     details: {
       similarCards: topSimilar,
       isDuplicate,
+      method,
     },
     timestamp: new Date().toISOString(),
   };

@@ -12,6 +12,7 @@ import split from './routes/split.js';
 import backup from './routes/backup.js';
 import media from './routes/media.js';
 import validate from './routes/validate.js';
+import embedding from './routes/embedding.js';
 
 const app = new Hono();
 
@@ -35,6 +36,7 @@ app.route('/api/split', split);
 app.route('/api/backup', backup);
 app.route('/api/media', media);
 app.route('/api/validate', validate);
+app.route('/api/embedding', embedding);
 
 // Error handler
 app.onError((err, c) => {
