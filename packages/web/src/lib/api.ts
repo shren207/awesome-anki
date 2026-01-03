@@ -123,7 +123,31 @@ export interface SimilarityResult extends ValidationResult {
       matchedContent: string;
     }>;
     isDuplicate: boolean;
+    method?: 'jaccard' | 'embedding';
   };
+}
+
+// Embedding types
+export interface EmbeddingStatus {
+  exists: boolean;
+  deckName: string;
+  dimension: number;
+  totalEmbeddings: number;
+  totalNotes: number;
+  coverage: number;
+  lastUpdated: string | null;
+  cacheFilePath: string;
+}
+
+export interface EmbeddingGenerateResult {
+  deckName: string;
+  totalNotes: number;
+  cachedCount: number;
+  generatedCount: number;
+  skippedCount: number;
+  removedCount: number;
+  errorCount: number;
+  lastUpdated: string;
 }
 
 export interface ContextResult extends ValidationResult {
@@ -224,10 +248,15 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ noteId }),
       }),
-    similarity: (noteId: number, deckName: string, threshold = 70) =>
+    similarity: (noteId: number, deckName: string, opts?: { threshold?: number; useEmbedding?: boolean }) =>
       fetchJson<{ noteId: number; result: SimilarityResult }>('/validate/similarity', {
         method: 'POST',
-        body: JSON.stringify({ noteId, deckName, threshold }),
+        body: JSON.stringify({
+          noteId,
+          deckName,
+          threshold: opts?.threshold,
+          useEmbedding: opts?.useEmbedding,
+        }),
       }),
     context: (noteId: number, includeReverseLinks = true) =>
       fetchJson<{ noteId: number; result: ContextResult }>('/validate/context', {
@@ -239,5 +268,20 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ noteId, deckName }),
       }),
+  },
+
+  embedding: {
+    status: (deckName: string) =>
+      fetchJson<EmbeddingStatus>(`/embedding/status/${encodeURIComponent(deckName)}`),
+    generate: (deckName: string, forceRegenerate = false) =>
+      fetchJson<EmbeddingGenerateResult>('/embedding/generate', {
+        method: 'POST',
+        body: JSON.stringify({ deckName, forceRegenerate }),
+      }),
+    deleteCache: (deckName: string) =>
+      fetchJson<{ deckName: string; deleted: boolean; message: string }>(
+        `/embedding/cache/${encodeURIComponent(deckName)}`,
+        { method: 'DELETE' }
+      ),
   },
 };

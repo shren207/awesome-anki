@@ -1,11 +1,11 @@
 /**
  * ValidationPanel - 카드 검증 결과 패널
  */
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { api, type AllValidationResult, type ValidationStatus } from '../../lib/api';
+import { api, type AllValidationResult, type ValidationStatus, type SimilarityResult } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import {
   CheckCircle,
@@ -19,6 +19,8 @@ import {
   ChevronDown,
   ChevronUp,
   Link2,
+  Sparkles,
+  Hash,
 } from 'lucide-react';
 
 interface ValidationPanelProps {
@@ -58,10 +60,26 @@ function getStatusBg(status: ValidationStatus): string {
 export function ValidationPanel({ noteId, deckName, className }: ValidationPanelProps) {
   const [result, setResult] = useState<AllValidationResult | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [useEmbedding, setUseEmbedding] = useState(false);
+  const [similarityResult, setSimilarityResult] = useState<SimilarityResult | null>(null);
+
+  // 임베딩 상태 조회
+  const { data: embeddingStatus } = useQuery({
+    queryKey: ['embedding-status', deckName],
+    queryFn: () => api.embedding.status(deckName),
+    staleTime: 60000, // 1분
+  });
 
   const validateMutation = useMutation({
     mutationFn: () => api.validate.all(noteId, deckName),
     onSuccess: (data) => setResult(data),
+  });
+
+  // 임베딩 기반 유사성 검사 (별도 호출)
+  const similarityMutation = useMutation({
+    mutationFn: (useEmbed: boolean) =>
+      api.validate.similarity(noteId, deckName, { useEmbedding: useEmbed }),
+    onSuccess: (data) => setSimilarityResult(data.result),
   });
 
   const toggleSection = (section: string) => {
@@ -228,7 +246,22 @@ export function ValidationPanel({ noteId, deckName, className }: ValidationPanel
                 <div className="flex items-center gap-2">
                   <Copy className="w-4 h-4" />
                   <span className="font-medium">유사성 검사</span>
-                  <StatusIcon status={result.results.similarity.status} />
+                  <StatusIcon status={similarityResult?.status ?? result.results.similarity.status} />
+                  {/* 검사 방식 뱃지 */}
+                  {(similarityResult?.details.method || result.results.similarity.details.method) && (
+                    <span className={cn(
+                      'px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1',
+                      (similarityResult?.details.method ?? result.results.similarity.details.method) === 'embedding'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-gray-100 text-gray-700'
+                    )}>
+                      {(similarityResult?.details.method ?? result.results.similarity.details.method) === 'embedding' ? (
+                        <><Sparkles className="w-3 h-3" />임베딩</>
+                      ) : (
+                        <><Hash className="w-3 h-3" />Jaccard</>
+                      )}
+                    </span>
+                  )}
                 </div>
                 {expandedSections.has('similarity') ? (
                   <ChevronUp className="w-4 h-4" />
@@ -238,28 +271,87 @@ export function ValidationPanel({ noteId, deckName, className }: ValidationPanel
               </button>
               {expandedSections.has('similarity') && (
                 <div className="p-3 border-t bg-muted/30">
-                  <p className="text-sm mb-2">{result.results.similarity.message}</p>
-                  {result.results.similarity.details.similarCards.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {result.results.similarity.details.similarCards.map((card, i) => (
-                        <div key={i} className="text-xs p-2 bg-background rounded">
-                          <div className="flex justify-between items-start">
-                            <span className="font-mono">#{card.noteId}</span>
-                            <span className={cn(
-                              'px-1.5 py-0.5 rounded',
-                              card.similarity >= 90 ? 'bg-red-100 text-red-700' :
-                              card.similarity >= 70 ? 'bg-yellow-100 text-yellow-700' :
-                              'bg-gray-100 text-gray-700'
-                            )}>
-                              {card.similarity}% 유사
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground mt-1 line-clamp-2">
-                            {card.matchedContent}
-                          </p>
-                        </div>
-                      ))}
+                  {/* 검사 방식 토글 */}
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b">
+                    <span className="text-xs text-muted-foreground">검사 방식</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUseEmbedding(false);
+                          similarityMutation.mutate(false);
+                        }}
+                        disabled={similarityMutation.isPending}
+                        className={cn(
+                          'px-2 py-1 text-xs rounded flex items-center gap-1 transition',
+                          !useEmbedding
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
+                        )}
+                      >
+                        <Hash className="w-3 h-3" />
+                        Jaccard
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUseEmbedding(true);
+                          similarityMutation.mutate(true);
+                        }}
+                        disabled={similarityMutation.isPending}
+                        className={cn(
+                          'px-2 py-1 text-xs rounded flex items-center gap-1 transition',
+                          useEmbedding
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-muted hover:bg-muted/80'
+                        )}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        임베딩
+                        {embeddingStatus?.exists && embeddingStatus.coverage > 0 && (
+                          <span className="text-[10px] opacity-80">
+                            ({embeddingStatus.coverage}%)
+                          </span>
+                        )}
+                      </button>
                     </div>
+                  </div>
+
+                  {similarityMutation.isPending && (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <span className="text-xs text-muted-foreground">검사 중...</span>
+                    </div>
+                  )}
+
+                  {!similarityMutation.isPending && (
+                    <>
+                      <p className="text-sm mb-2">
+                        {similarityResult?.message ?? result.results.similarity.message}
+                      </p>
+                      {(similarityResult?.details.similarCards ?? result.results.similarity.details.similarCards).length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {(similarityResult?.details.similarCards ?? result.results.similarity.details.similarCards).map((card, i) => (
+                            <div key={i} className="text-xs p-2 bg-background rounded">
+                              <div className="flex justify-between items-start">
+                                <span className="font-mono">#{card.noteId}</span>
+                                <span className={cn(
+                                  'px-1.5 py-0.5 rounded',
+                                  card.similarity >= 90 ? 'bg-red-100 text-red-700' :
+                                  card.similarity >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                                  'bg-gray-100 text-gray-700'
+                                )}>
+                                  {card.similarity}% 유사
+                                </span>
+                              </div>
+                              <p className="text-muted-foreground mt-1 line-clamp-2">
+                                {card.matchedContent}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
