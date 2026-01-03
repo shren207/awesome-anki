@@ -11,6 +11,7 @@ import cards from './routes/cards.js';
 import split from './routes/split.js';
 import backup from './routes/backup.js';
 import media from './routes/media.js';
+import validate from './routes/validate.js';
 
 const app = new Hono();
 
@@ -33,6 +34,7 @@ app.route('/api/cards', cards);
 app.route('/api/split', split);
 app.route('/api/backup', backup);
 app.route('/api/media', media);
+app.route('/api/validate', validate);
 
 // Error handler
 app.onError((err, c) => {

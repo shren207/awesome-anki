@@ -73,6 +73,70 @@ export interface BackupEntry {
   splitType: 'hard' | 'soft';
 }
 
+// Validation types
+export type ValidationStatus = 'valid' | 'warning' | 'error' | 'unknown';
+
+export interface ValidationResult {
+  status: ValidationStatus;
+  type: string;
+  message: string;
+  confidence: number;
+  details: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface FactCheckResult extends ValidationResult {
+  type: 'fact-check';
+  details: {
+    claims: Array<{
+      claim: string;
+      isVerified: boolean;
+      confidence: number;
+      correction?: string;
+      source?: string;
+    }>;
+    overallAccuracy: number;
+    sources?: string[];
+  };
+}
+
+export interface FreshnessResult extends ValidationResult {
+  type: 'freshness';
+  details: {
+    outdatedItems: Array<{
+      content: string;
+      reason: string;
+      currentInfo?: string;
+      severity: 'low' | 'medium' | 'high';
+    }>;
+    lastKnownUpdate?: string;
+    recommendedAction?: string;
+  };
+}
+
+export interface SimilarityResult extends ValidationResult {
+  type: 'similarity';
+  details: {
+    similarCards: Array<{
+      noteId: number;
+      similarity: number;
+      matchedContent: string;
+    }>;
+    isDuplicate: boolean;
+  };
+}
+
+export interface AllValidationResult {
+  noteId: number;
+  overallStatus: ValidationStatus;
+  results: {
+    factCheck: FactCheckResult;
+    freshness: FreshnessResult;
+    similarity: SimilarityResult;
+  };
+  validatedAt: string;
+}
+
 // API Functions
 export const api = {
   decks: {
@@ -135,4 +199,27 @@ export const api = {
   },
 
   health: () => fetchJson<{ status: string; timestamp: string }>('/health'),
+
+  validate: {
+    factCheck: (noteId: number, thorough = false) =>
+      fetchJson<{ noteId: number; result: FactCheckResult }>('/validate/fact-check', {
+        method: 'POST',
+        body: JSON.stringify({ noteId, thorough }),
+      }),
+    freshness: (noteId: number) =>
+      fetchJson<{ noteId: number; result: FreshnessResult }>('/validate/freshness', {
+        method: 'POST',
+        body: JSON.stringify({ noteId }),
+      }),
+    similarity: (noteId: number, deckName: string, threshold = 70) =>
+      fetchJson<{ noteId: number; result: SimilarityResult }>('/validate/similarity', {
+        method: 'POST',
+        body: JSON.stringify({ noteId, deckName, threshold }),
+      }),
+    all: (noteId: number, deckName: string) =>
+      fetchJson<AllValidationResult>('/validate/all', {
+        method: 'POST',
+        body: JSON.stringify({ noteId, deckName }),
+      }),
+  },
 };

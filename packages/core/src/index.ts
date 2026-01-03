@@ -103,3 +103,6 @@ export {
   printProgress,
   type DiffResult,
 } from './utils/diff-viewer.js';
+
+// Validator exports
+export * from './validator/index.js';

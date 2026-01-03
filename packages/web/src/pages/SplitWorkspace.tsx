@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   Sparkles,
   Zap,
+  Shield,
 } from 'lucide-react';
+import { ValidationPanel } from '../components/validation/ValidationPanel';
 
 interface SplitCandidate {
   noteId: number;
@@ -35,6 +37,7 @@ export function SplitWorkspace() {
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<SplitCandidate | null>(null);
   const [splitType, setSplitType] = useState<'hard' | 'soft'>('hard');
+  const [showValidation, setShowValidation] = useState(false);
 
   const { data: decksData } = useDecks();
   const { data: cardsData, isLoading: isLoadingCards } = useCards(selectedDeck, {
@@ -194,9 +197,23 @@ export function SplitWorkspace() {
             <CardHeader className="py-3 px-4 border-b shrink-0 flex flex-row items-center justify-between">
               <CardTitle className="text-sm">원본 카드</CardTitle>
               {selectedCard && (
-                <span className="text-xs text-muted-foreground">
-                  NID: {selectedCard.noteId}
-                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setShowValidation(!showValidation)}
+                    className={cn(
+                      'flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors',
+                      showValidation
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                    )}
+                  >
+                    <Shield className="w-3 h-3" />
+                    검증
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    NID: {selectedCard.noteId}
+                  </span>
+                </div>
               )}
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-4 min-h-0">
@@ -206,11 +223,20 @@ export function SplitWorkspace() {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <ContentRenderer
-                    content={cardDetail?.text || selectedCard.text}
-                    showToggle={true}
-                    defaultView="rendered"
-                  />
+                  <div className="space-y-4">
+                    <ContentRenderer
+                      content={cardDetail?.text || selectedCard.text}
+                      showToggle={true}
+                      defaultView="rendered"
+                    />
+                    {/* 검증 패널 */}
+                    {showValidation && selectedDeck && (
+                      <ValidationPanel
+                        noteId={selectedCard.noteId}
+                        deckName={selectedDeck}
+                      />
+                    )}
+                  </div>
                 )
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
