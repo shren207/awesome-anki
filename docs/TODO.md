@@ -12,8 +12,8 @@
 | 구분 | 상태 | 비고 |
 |------|------|------|
 | CLI 기능 | ✅ 완료 | status, split, analyze, rollback, backups |
-| 웹 API | ✅ 완료 | decks, cards, split, backup 라우트 |
-| 웹 GUI | 🔄 진행중 | Phase 4 완료, Phase 5 남음 |
+| 웹 API | ✅ 완료 | decks, cards, split, backup, validate 라우트 |
+| 웹 GUI | ✅ 완료 | Phase 1-5 완료 |
 
 ---
 
@@ -78,62 +78,51 @@
 - [x] ContentRenderer <br> 태그 처리 개선
 - [x] Hard Split 기준 수정 (#### 헤더만, --- 구분선 제외)
 
----
+### 웹 GUI Phase 5: 카드 검증 기능 ✅
+- [x] packages/core/src/validator/ 모듈 생성
+  - [x] types.ts - 검증 결과 타입 정의
+  - [x] fact-checker.ts - Gemini 기반 팩트 체크
+  - [x] freshness-checker.ts - 기술 최신성 검사
+  - [x] similarity-checker.ts - Jaccard 유사도 기반 중복 탐지
+- [x] packages/server/src/routes/validate.ts
+  - [x] POST /api/validate/fact-check
+  - [x] POST /api/validate/freshness
+  - [x] POST /api/validate/similarity
+  - [x] POST /api/validate/all (병렬 실행)
+- [x] ValidationPanel 컴포넌트
+- [x] SplitWorkspace에 검증 토글 버튼 및 패널 통합
 
-## 미구현 작업
-
-### 웹 GUI Phase 5: 카드 검증 기능 📋
-
-**목표**: Gemini를 활용한 카드 내용 검증
-
-**요구사항** (사용자 인터뷰에서 확인):
-1. 팩트 체크 - 카드 내용의 사실 여부 검증
-2. 최신성 검사 - 기술 변화로 인한 outdated 내용 감지
-3. 중복/유사성 검사 - 임베딩 기반 유사 카드 탐지
-4. 문맥 일관성 검사 - 카드 간 논리적 연결 확인
-
-**필요한 작업**:
-1. [ ] packages/core/src/validator/ 모듈 생성
-   - [ ] fact-checker.ts
-   - [ ] freshness-checker.ts
-   - [ ] similarity-checker.ts (임베딩 필요)
-   - [ ] context-checker.ts
-
-2. [ ] packages/server/src/routes/validate.ts
-   - [ ] POST /api/validate/fact-check
-   - [ ] POST /api/validate/freshness
-   - [ ] POST /api/validate/similarity
-   - [ ] POST /api/validate/context
-
-3. [ ] ValidationPanel 컴포넌트
-4. [ ] CardBrowser에 검증 상태 뱃지 추가
-
-### ✅ 완료: ContentRenderer 파싱 미스매칭 수정
-
-**해결됨**: markdown-it 기반 + CSS 스타일 추가로 Anki 원본과 동일하게 렌더링
-
-**완료된 작업**:
+### ContentRenderer 파싱 미스매칭 수정 ✅
 - [x] markdown-it + markdown-it-container + highlight.js 적용
 - [x] Callout/Toggle 컨테이너 렌더링
 - [x] nid 링크 처리
 - [x] Cloze 강조 표시
 - [x] 이미지 API 프록시
 - [x] `<br>` 및 `&lt;br&gt;` 이스케이프 처리
-- [x] Header (h1-h6) CSS 스타일 추가 (font-weight: bold, font-size 차등)
+- [x] Header (h1-h6) CSS 스타일 추가
 - [x] Bullet point (ul/ol) list-style-type 추가
 - [x] Splitter (hr) border-top 스타일 추가
 
-**검증 결과** (Anki 원본 vs 현재 구현):
-
-| 항목 | Anki 원본 | 현재 구현 | 상태 |
-|------|-----------|-----------|------|
-| Header (#, ##, ###) | 크고 굵은 글씨로 강조 | 크고 굵은 글씨로 강조 | ✅ |
-| Bullet point (*, -) | 점(•)으로 표시 | 점(•)으로 표시 | ✅ |
-| Splitter (---) | 가로선으로 표시 | 가로선으로 표시 | ✅ |
-| 번호 리스트 (1., 2.) | 정상 표시 | 정상 표시 | ✅ |
-| 컨테이너 (::: link) | 배경색 + 테두리 | 배경색 + 테두리 | ✅ |
-
 ---
+
+## 미구현 작업
+
+### Phase 6: 고급 기능 📋
+
+**1. CardBrowser 검증 상태 뱃지**
+- [ ] 검증 결과 캐싱 (localStorage 또는 서버)
+- [ ] 카드 목록에 검증 상태 아이콘 표시
+- [ ] 필터: 검증 필요한 카드만 보기
+
+**2. 문맥 일관성 검사**
+- [ ] context-checker.ts 구현
+- [ ] 관련 카드 간 논리적 연결 확인
+- [ ] nid 링크로 연결된 카드 그룹 분석
+
+**3. 임베딩 기반 유사성 검사**
+- [ ] Gemini 임베딩 API 연동
+- [ ] 현재 Jaccard → 임베딩 코사인 유사도로 개선
+- [ ] 덱 전체 임베딩 캐싱
 
 ### 기타 미구현 기능 📋
 
@@ -177,28 +166,19 @@
 
 ## 다음 세션에서 할 작업
 
-### Phase 5: 카드 검증 기능 🔴
+### Phase 6: 고급 기능 🔴
 
-**목표**: Gemini를 활용한 카드 내용 검증
+**우선순위 1: CardBrowser 검증 상태 뱃지**
+- 목표: 카드 목록에서 검증이 필요한 카드를 한눈에 파악
+- 작업:
+  1. 검증 결과 캐싱 메커니즘 구현
+  2. CardBrowser에 상태 아이콘 추가
+  3. 필터 옵션 추가
 
-**필요한 작업**:
-1. `packages/core/src/validator/` 모듈 구현
-   - fact-checker.ts: 팩트 체크 (Gemini + Web Search)
-   - freshness-checker.ts: 최신성 검사
-   - similarity-checker.ts: 중복/유사성 검사
-   - context-checker.ts: 문맥 일관성 검사
-
-2. `packages/server/src/routes/validate.ts` API 추가
-   - POST /api/validate/fact-check
-   - POST /api/validate/freshness
-   - POST /api/validate/similarity
-   - POST /api/validate/context
-
-3. ValidationPanel 컴포넌트 구현
-4. CardBrowser에 검증 상태 뱃지 추가
-
-### 예상 소요 시간
-- Phase 5 (카드 검증): 2-3시간
+**우선순위 2: 다크모드**
+- CSS 변수 활용
+- 시스템 설정 연동 (prefers-color-scheme)
+- 토글 버튼 추가
 
 ---
 
@@ -230,4 +210,21 @@ packages/web/src/pages/         # 페이지 컴포넌트
 packages/web/src/hooks/         # React Query 훅
 packages/server/src/routes/     # API 라우트
 packages/core/src/              # 핵심 로직
+packages/core/src/validator/    # 검증 모듈
 ```
+
+### API 엔드포인트 목록
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | /api/decks | 덱 목록 |
+| GET | /api/decks/:name/stats | 덱 통계 |
+| GET | /api/cards/deck/:name | 카드 목록 |
+| GET | /api/cards/:noteId | 카드 상세 |
+| POST | /api/split/preview | 분할 미리보기 |
+| POST | /api/split/apply | 분할 적용 |
+| GET | /api/backup | 백업 목록 |
+| POST | /api/backup/:id/rollback | 롤백 |
+| POST | /api/validate/fact-check | 팩트 체크 |
+| POST | /api/validate/freshness | 최신성 검사 |
+| POST | /api/validate/similarity | 유사성 검사 |
+| POST | /api/validate/all | 전체 검증 |
