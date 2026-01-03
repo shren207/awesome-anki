@@ -3,15 +3,36 @@ import { api, type SplitPreviewResult, type SplitApplyResult } from '../lib/api'
 import { queryKeys } from '../lib/query-keys';
 
 export function useSplitPreview() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: ({
       noteId,
-      splitType,
+      useGemini = false,
     }: {
       noteId: number;
-      splitType: 'hard' | 'soft';
-    }) => api.split.preview(noteId, splitType),
+      useGemini?: boolean;
+    }) => api.split.preview(noteId, useGemini),
+    onSuccess: (data, variables) => {
+      // 결과를 React Query 캐시에 저장 (카드별 독립 캐시)
+      queryClient.setQueryData(
+        queryKeys.split.preview(variables.noteId, variables.useGemini),
+        data
+      );
+    },
   });
+}
+
+/**
+ * 캐시된 분할 미리보기 결과 조회
+ * SplitWorkspace에서 카드 선택 시 캐시 확인용
+ */
+export function getCachedSplitPreview(
+  queryClient: ReturnType<typeof useQueryClient>,
+  noteId: number,
+  useGemini: boolean
+): SplitPreviewResult | undefined {
+  return queryClient.getQueryData(queryKeys.split.preview(noteId, useGemini));
 }
 
 export function useSplitApply() {

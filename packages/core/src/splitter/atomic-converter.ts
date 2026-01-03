@@ -20,6 +20,7 @@ export interface AtomicCard {
 
 export interface SplitAnalysis {
   canHardSplit: boolean;
+  canSoftSplit: boolean;
   hardSplitPoints: HardSplitPoint[];
   hasTodoBlock: boolean;
   clozeCount: number;
@@ -82,9 +83,13 @@ export function analyzeForSplit(htmlContent: string): SplitAnalysis {
 
   // Hard Split은 #### 헤더가 있을 때만 가능 (--- 구분선은 분할 기준으로 사용하지 않음)
   const headerCount = hardSplitPoints.filter((p) => p.type === 'header').length;
+  const canHardSplit = headerCount >= 2; // 최소 2개 이상의 헤더가 있어야 분할 가능
+  // Soft Split: Hard Split 불가능하지만 Cloze가 3개 초과인 경우
+  const canSoftSplit = !canHardSplit && clozes.length > 3;
 
   return {
-    canHardSplit: headerCount >= 2, // 최소 2개 이상의 헤더가 있어야 분할 가능
+    canHardSplit,
+    canSoftSplit,
     hardSplitPoints,
     hasTodoBlock,
     clozeCount: clozes.length,

@@ -3,14 +3,17 @@
  * 3단 레이아웃: 후보 목록 | 원본 카드 | 분할 미리보기
  */
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { ContentRenderer } from '../components/card/ContentRenderer';
 import { DiffViewer, SplitPreviewCard } from '../components/card/DiffViewer';
 import { useDecks } from '../hooks/useDecks';
 import { useCards, useCardDetail } from '../hooks/useCards';
-import { useSplitPreview, useSplitApply } from '../hooks/useSplit';
+import { useSplitPreview, useSplitApply, getCachedSplitPreview } from '../hooks/useSplit';
+import { queryKeys } from '../lib/query-keys';
 import { cn } from '../lib/utils';
+import type { SplitPreviewResult } from '../lib/api';
 import {
   Scissors,
   ChevronRight,
@@ -39,10 +42,11 @@ export function SplitWorkspace() {
   const [splitType, setSplitType] = useState<'hard' | 'soft'>('hard');
   const [showValidation, setShowValidation] = useState(false);
 
+  const queryClient = useQueryClient();
   const { data: decksData } = useDecks();
   const { data: cardsData, isLoading: isLoadingCards } = useCards(selectedDeck, {
-    limit: 100,
-    filter: 'split_candidates',
+    limit: 500,
+    filter: 'all',
   });
 
   // 선택된 카드의 상세 정보 (전체 텍스트 포함)
@@ -53,6 +57,19 @@ export function SplitWorkspace() {
   const splitPreview = useSplitPreview();
   const splitApply = useSplitApply();
 
+  // 현재 선택된 카드의 캐시된 미리보기 결과 조회
+  const cachedPreview = selectedCard
+    ? getCachedSplitPreview(queryClient, selectedCard.noteId, splitType === 'soft')
+    : undefined;
+
+  // 캐시 있으면 캐시 사용, 없으면 mutation 결과 사용
+  const previewData: SplitPreviewResult | undefined = cachedPreview || splitPreview.data;
+
+  // 현재 카드에 대한 로딩 중인지 확인 (다른 카드 분석 중에는 영향 없음)
+  const isLoadingCurrentCard =
+    splitPreview.isPending &&
+    splitPreview.variables?.noteId === selectedCard?.noteId;
+
   // 덱 선택 시 첫 번째 덱 자동 선택
   useEffect(() => {
     if (decksData?.decks && decksData.decks.length > 0 && !selectedDeck) {
@@ -60,17 +77,37 @@ export function SplitWorkspace() {
     }
   }, [decksData, selectedDeck]);
 
-  // 카드 선택 시 자동으로 분할 미리보기 요청
+  // 카드 선택 시 캐시 확인 후 필요한 경우만 API 호출
   useEffect(() => {
     if (selectedCard) {
+      // mutation 상태 초기화 (이전 카드 결과 제거)
+      splitPreview.reset();
+
       // 분할 타입 자동 선택
       const type = selectedCard.analysis.canHardSplit ? 'hard' : 'soft';
       setSplitType(type);
 
-      // 미리보기 요청
-      splitPreview.mutate({ noteId: selectedCard.noteId, splitType: type });
+      // 캐시 확인
+      const cached = getCachedSplitPreview(
+        queryClient,
+        selectedCard.noteId,
+        type === 'soft'
+      );
+
+      // 캐시 없고 Hard Split이면 자동 요청 (Gemini 비용 없음)
+      if (!cached && selectedCard.analysis.canHardSplit) {
+        splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: false });
+      }
+      // Soft Split은 사용자가 명시적으로 요청해야 함 (캐시된 결과 있으면 바로 표시)
     }
   }, [selectedCard?.noteId]);
+
+  // Soft Split 분석 요청 핸들러
+  const handleRequestSoftSplit = () => {
+    if (selectedCard) {
+      splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: true });
+    }
+  };
 
   const candidates = (cardsData?.cards || []).filter(
     (c: any) => c.analysis?.canHardSplit || c.analysis?.canSoftSplit
@@ -99,7 +136,10 @@ export function SplitWorkspace() {
     const newType = splitType === 'hard' ? 'soft' : 'hard';
     setSplitType(newType);
     if (selectedCard) {
-      splitPreview.mutate({ noteId: selectedCard.noteId, splitType: newType });
+      // Hard로 전환 시만 자동 요청, Soft는 별도 버튼으로
+      if (newType === 'hard') {
+        splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: false });
+      }
     }
   };
 
@@ -288,32 +328,53 @@ export function SplitWorkspace() {
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <p>카드를 선택하면 분할 미리보기가 표시됩니다</p>
                 </div>
-              ) : splitPreview.isPending ? (
+              ) : isLoadingCurrentCard ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
-              ) : splitPreview.isError ? (
-                <div className="flex items-center justify-center h-full text-destructive">
-                  <AlertTriangle className="w-5 h-5 mr-2" />
-                  <span>분할 분석 실패</span>
+              ) : splitPreview.isError && splitPreview.variables?.noteId === selectedCard.noteId ? (
+                <div className="flex flex-col items-center justify-center h-full text-destructive">
+                  <AlertTriangle className="w-8 h-8 mb-3" />
+                  <span className="font-medium mb-2">분할 분석 실패</span>
+                  {splitPreview.error && (
+                    <p className="text-xs text-muted-foreground text-center max-w-xs bg-muted p-2 rounded">
+                      {splitPreview.error instanceof Error
+                        ? splitPreview.error.message
+                        : String(splitPreview.error)}
+                    </p>
+                  )}
+                  <Button
+                    onClick={handleRequestSoftSplit}
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                  >
+                    다시 시도
+                  </Button>
                 </div>
-              ) : splitPreview.data ? (
+              ) : previewData && previewData.splitCards ? (
                 <div className="space-y-4">
+                  {/* 캐시 표시 */}
+                  {cachedPreview && (
+                    <div className="text-xs text-muted-foreground bg-green-50 px-2 py-1 rounded inline-block">
+                      ✓ 캐시된 결과
+                    </div>
+                  )}
                   {/* 분할 요약 */}
                   <div className="p-3 bg-muted rounded-lg text-sm">
                     <p className="font-medium mb-1">
-                      {splitPreview.data.splitCards.length}개 카드로 분할
+                      {previewData.splitCards.length}개 카드로 분할
                     </p>
-                    {splitPreview.data.splitReason && (
+                    {previewData.splitReason && (
                       <p className="text-muted-foreground text-xs">
-                        {splitPreview.data.splitReason}
+                        {previewData.splitReason}
                       </p>
                     )}
                   </div>
 
                   {/* 분할 카드 미리보기 */}
                   <div className="space-y-3">
-                    {splitPreview.data.splitCards.map((card, idx) => (
+                    {previewData.splitCards.map((card, idx) => (
                       <SplitPreviewCard
                         key={idx}
                         card={card}
@@ -322,11 +383,30 @@ export function SplitWorkspace() {
                     ))}
                   </div>
                 </div>
+              ) : splitType === 'soft' ? (
+                // Soft Split: Gemini 분석 요청 필요
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <Sparkles className="w-12 h-12 mb-4 text-purple-400" />
+                  <p className="text-center mb-4">
+                    Soft Split은 Gemini AI를 사용합니다.<br />
+                    <span className="text-xs text-muted-foreground">
+                      API 비용이 발생할 수 있습니다.
+                    </span>
+                  </p>
+                  <Button
+                    onClick={handleRequestSoftSplit}
+                    variant="outline"
+                    className="bg-purple-50 hover:bg-purple-100 border-purple-200"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2 text-purple-600" />
+                    Gemini 분석 요청
+                  </Button>
+                </div>
               ) : null}
             </CardContent>
 
             {/* 적용 버튼 */}
-            {selectedCard && splitPreview.data && (
+            {selectedCard && previewData && previewData.splitCards && (
               <div className="px-4 py-3 border-t shrink-0">
                 <Button
                   onClick={handleApply}

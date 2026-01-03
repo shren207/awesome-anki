@@ -464,3 +464,150 @@ bun add @radix-ui/react-popover
 ```
 
 **생성 파일**: `packages/web/src/components/ui/Popover.tsx`
+
+### 14.5 대시보드와 Split 페이지 분할 후보 수 불일치
+
+**문제**: 대시보드에서 Hard Split 13개, Soft Split 168개로 표시되지만, Split 페이지에서는 Hard 1개만 표시됨
+
+**원인 1**: `canSoftSplit` 필드 누락
+- `analyzeForSplit` 함수에서 `canSoftSplit` 필드를 반환하지 않음
+- API 응답에 포함되지 않아 클라이언트 필터링 실패
+
+**원인 2**: 페이지네이션 제한
+- SplitWorkspace에서 `limit: 100`으로 제한되어 전체 카드 미반환
+
+**해결**:
+
+1. `SplitAnalysis` 인터페이스에 `canSoftSplit` 필드 추가:
+```typescript
+// packages/core/src/splitter/atomic-converter.ts
+export interface SplitAnalysis {
+  canHardSplit: boolean;
+  canSoftSplit: boolean;  // 추가
+  // ...
+}
+```
+
+2. `analyzeForSplit` 함수에서 `canSoftSplit` 계산:
+```typescript
+const canSoftSplit = !canHardSplit && clozes.length > 3;
+return {
+  canHardSplit,
+  canSoftSplit,
+  // ...
+};
+```
+
+3. SplitWorkspace에서 limit 증가:
+```typescript
+// packages/web/src/pages/SplitWorkspace.tsx
+const { data: cardsData } = useCards(selectedDeck, {
+  limit: 500,  // 100 → 500
+  filter: 'all',
+});
+```
+
+**참고**: Hard/Soft Split은 상호 배타적 (Hard가 가능하면 Soft는 false)
+
+### 14.6 Soft Split 자동 Gemini API 호출 문제
+
+**문제**: 카드 선택 시 자동으로 Gemini API가 호출되어 사용자 모르게 비용 발생
+
+**원인**:
+- `useSplit.ts`에서 `splitType: 'soft'` 문자열을 `useGemini` boolean 파라미터로 전달
+- JavaScript에서 non-empty string은 truthy이므로 `useGemini: true`로 해석됨
+
+**해결**:
+
+1. `useSplit.ts` 훅에서 파라미터 명시적 타입 지정:
+```typescript
+export function useSplitPreview() {
+  return useMutation({
+    mutationFn: ({
+      noteId,
+      useGemini = false,  // 명시적 boolean
+    }: {
+      noteId: number;
+      useGemini?: boolean;
+    }) => api.split.preview(noteId, useGemini),
+  });
+}
+```
+
+2. `SplitWorkspace.tsx`에서 Hard Split만 자동 미리보기:
+```typescript
+// 카드 선택 시 Hard Split만 자동 미리보기 (비용 없음)
+useEffect(() => {
+  if (selectedCard?.analysis.canHardSplit) {
+    splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: false });
+  }
+}, [selectedCard?.noteId]);
+```
+
+3. Soft Split은 "Gemini 분석 요청" 버튼 클릭 시에만 호출:
+```typescript
+const handleRequestSoftSplit = () => {
+  if (selectedCard) {
+    splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: true });
+  }
+};
+```
+
+**결과**:
+- Hard Split: 카드 선택 시 자동 미리보기 (정규식 기반, 비용 없음)
+- Soft Split: "Gemini 분석 요청" 버튼 클릭 시에만 API 호출 (비용 발생 사전 고지)
+
+### 14.7 SplitWorkspace 상태 관리 개선
+
+**문제**:
+1. 페이지 이탈 후 복귀 시 분석 결과 초기화
+2. 카드 전환 시 이전 분석 결과가 계속 표시됨
+3. 각 카드별 독립적인 미리보기 상태 부재
+
+**원인**: `useMutation`이 메모리만 캐시하고, React Query 캐시를 활용하지 않음
+
+**해결**:
+
+1. `useSplit.ts`에서 `onSuccess` 콜백으로 캐시 저장:
+```typescript
+export function useSplitPreview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ noteId, useGemini }) => api.split.preview(noteId, useGemini),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(
+        queryKeys.split.preview(variables.noteId, variables.useGemini),
+        data
+      );
+    },
+  });
+}
+```
+
+2. `SplitWorkspace.tsx`에서 캐시 기반 상태 관리:
+```typescript
+// 캐시된 미리보기 조회
+const cachedPreview = getCachedSplitPreview(queryClient, selectedCard.noteId, splitType === 'soft');
+// 캐시 있으면 캐시 사용, 없으면 mutation 결과 사용
+const previewData = cachedPreview || splitPreview.data;
+```
+
+3. 카드 선택 시 mutation 리셋 + 캐시 확인:
+```typescript
+useEffect(() => {
+  if (selectedCard) {
+    splitPreview.reset(); // 이전 카드 결과 제거
+    const cached = getCachedSplitPreview(...);
+    if (!cached && selectedCard.analysis.canHardSplit) {
+      splitPreview.mutate(...); // 캐시 없으면 요청
+    }
+  }
+}, [selectedCard?.noteId]);
+```
+
+**결과**:
+- 페이지 이탈/복귀 시 캐시된 결과 즉시 표시
+- 각 카드별 독립적인 캐시 관리
+- "캐시된 결과" 배지로 사용자에게 시각적 피드백
+
+**추가 개선**: 에러 발생 시 상세 메시지 + "다시 시도" 버튼 표시
