@@ -81,6 +81,19 @@ function processContainers(text: string): string {
 }
 
 /**
+ * nid 링크 처리
+ * [제목|nid1234567890123] -> 클릭 가능한 링크로 변환
+ */
+function processNidLinks(text: string): string {
+  // [제목|nid{13자리}] 패턴
+  const nidPattern = /\[([^\]|]+)\|nid(\d{13})\]/g;
+
+  return text.replace(nidPattern, (match, title, nid) => {
+    return `<a href="#" class="nid-link" data-nid="${nid}" title="Note ID: ${nid}">${title}</a>`;
+  });
+}
+
+/**
  * HTML 태그를 마크다운/HTML 호환 형식으로 변환
  */
 function preprocessAnkiHtml(text: string): string {
@@ -105,8 +118,13 @@ export function ContentRenderer({
 
   const processedContent = useMemo(() => {
     let processed = content;
+    // 1. HTML 전처리 (<br> -> 줄바꿈, &nbsp; -> 공백)
     processed = preprocessAnkiHtml(processed);
+    // 2. nid 링크 처리 (마크다운 링크와 충돌 방지를 위해 먼저 처리)
+    processed = processNidLinks(processed);
+    // 3. Cloze 처리
     processed = processCloze(processed, true);
+    // 4. 컨테이너 처리 (:::로 시작하는 블록)
     processed = processContainers(processed);
     return processed;
   }, [content]);

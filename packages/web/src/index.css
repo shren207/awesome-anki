@@ -179,6 +179,18 @@ body {
   padding: 0;
 }
 
+/* nid 링크 스타일 */
+.nid-link {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  cursor: pointer;
+}
+
+.nid-link:hover {
+  text-decoration-style: solid;
+}
+
 /* Diff 스타일 */
 .diff-added {
   background-color: hsl(142 76% 36% / 0.2);
