@@ -1,0 +1,26 @@
+{
+  "name": "anki-claude-code",
+  "version": "1.0.0",
+  "description": "Anki Card Manager - Claude Code skill for managing Anki decks/cards",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "status": "tsx src/index.ts status",
+    "split": "tsx src/index.ts split",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "chalk": "^5.3.0",
+    "diff": "^5.2.0",
+    "dotenv": "^16.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.2.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
