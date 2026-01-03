@@ -1,4 +1,6 @@
-# Anki Card Splitter
+# Awesome Anki
+
+<img width="1719" height="983" alt="example" src="https://github.com/user-attachments/assets/6af494b7-0395-43d7-a41c-9a614c251047" />
 
 Anki 카드를 원자적 단위로 분할하는 웹 애플리케이션. 정보 밀도가 높은 카드를 학습 효율이 좋은 작은 카드들로 자동 분리합니다.
 
