@@ -109,52 +109,161 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
-/* Callout 스타일 (Anki 카드용) */
+/* Callout 스타일 (원본 템플릿 style.css와 동일) */
 .callout {
-  margin: 1rem 0;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border-left: 4px solid;
+  border-radius: 5px;
+  padding: 10px 20px;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+  overflow-x: auto;
+  border-left: 5px solid;
 }
 
-.callout-title {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+.callout strong {
+  display: block;
+  font-size: 0.95em;
 }
 
-.callout-tip {
-  background-color: hsl(142 76% 36% / 0.1);
-  border-color: hsl(142 76% 36%);
+.callout > ul,
+.callout > ol {
+  padding-left: 15px;
+  margin: 0;
+  font-size: 0.9em;
+  display: flex;
+  flex-direction: column;
+  row-gap: 5px;
 }
 
-.callout-warning {
-  background-color: hsl(38 92% 50% / 0.1);
-  border-color: hsl(38 92% 50%);
+.callout > pre {
+  margin: 0;
 }
 
-.callout-error {
-  background-color: hsl(0 84% 60% / 0.1);
-  border-color: hsl(0 84% 60%);
+.callout > p {
+  margin: 0;
+  line-height: 135%;
 }
 
-.callout-note {
-  background-color: hsl(221 83% 53% / 0.1);
-  border-color: hsl(221 83% 53%);
+.callout > img {
+  object-fit: contain;
+  align-self: flex-start;
 }
 
-.callout-link {
-  background-color: hsl(262 83% 58% / 0.1);
-  border-color: hsl(262 83% 58%);
+.callout.tip {
+  background-color: #e0f7fa;
+  border-left-color: #00acc1;
+  color: #193c47;
 }
 
-.callout-toggle {
-  background-color: hsl(var(--muted));
-  border-color: hsl(var(--border));
+.callout.warning {
+  background-color: #fff3e0;
+  border-left-color: #ffb300;
+  color: #4d3800;
 }
 
-.callout-toggle summary {
+.callout.error {
+  background-color: #ffebee;
+  border-left-color: #e53935;
+  color: #712c30;
+}
+
+.callout.note {
+  background-color: #e8f5e9;
+  border-left-color: #43a047;
+  color: #013100;
+}
+
+.callout.link {
+  background-color: #f9f9f9;
+  border-left-color: #ccd0d5;
+  color: #15171a;
+}
+
+/* Toggle 스타일 (원본 템플릿 style.css와 동일 - details/summary 기반) */
+.toggle {
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  margin: 10px 0;
+  overflow: hidden;
+  background-color: #fafafa;
+  border-left: 5px solid #ccd0d5;
+}
+
+.toggle .toggle-header {
+  padding: 12px 15px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.toggle .toggle-header::-webkit-details-marker {
+  display: none;
+}
+
+.toggle .toggle-arrow {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid #666;
+  transition: transform 0.3s ease;
+}
+
+.toggle[open] .toggle-arrow {
+  transform: rotate(90deg);
+}
+
+.toggle .toggle-title {
   font-weight: 500;
+  color: #333;
+}
+
+.toggle .toggle-content {
+  padding: 15px;
+  padding-top: 5px;
+  line-height: 1.4;
+}
+
+.toggle .toggle-content ul {
+  padding-left: 22px;
+  margin: 0;
+}
+
+/* Toggle 타입별 색상 (원본 템플릿과 동일) */
+.toggle.tip {
+  background-color: #e0f7fa;
+  border-left-color: #00acc1;
+  border-color: #b2ebf2;
+}
+
+.toggle.warning {
+  background-color: #fff3e0;
+  border-left-color: #ffb300;
+  border-color: #ffe0b2;
+}
+
+.toggle.error {
+  background-color: #ffebee;
+  border-left-color: #e53935;
+  border-color: #ffcdd2;
+}
+
+.toggle.note {
+  background-color: #e8f5e9;
+  border-left-color: #43a047;
+  border-color: #c8e6c9;
+}
+
+.toggle.todo {
+  background-color: #f3e5f5;
+  border-left-color: #9c27b0;
+  border-color: #e1bee7;
 }
 
 /* Prose 커스텀 */
