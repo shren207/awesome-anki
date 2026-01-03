@@ -10,6 +10,7 @@ import decks from './routes/decks.js';
 import cards from './routes/cards.js';
 import split from './routes/split.js';
 import backup from './routes/backup.js';
+import media from './routes/media.js';
 
 const app = new Hono();
 
@@ -31,6 +32,7 @@ app.route('/api/decks', decks);
 app.route('/api/cards', cards);
 app.route('/api/split', split);
 app.route('/api/backup', backup);
+app.route('/api/media', media);
 
 // Error handler
 app.onError((err, c) => {
