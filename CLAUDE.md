@@ -24,10 +24,12 @@ Anki 카드를 원자적 단위로 분할하는 Claude Code 스킬. 정보 밀�
 
 ```
 src/
-├── index.ts              # CLI 진입점 (status, split, analyze)
+├── index.ts              # CLI 진입점 (status, split, analyze, rollback, backups)
 ├── anki/
 │   ├── client.ts         # AnkiConnect API 래퍼
-│   └── operations.ts     # nid 승계 전략 (updateNoteFields vs addNotes)
+│   ├── operations.ts     # nid 승계 전략 (updateNoteFields vs addNotes)
+│   ├── backup.ts         # 백업/롤백 관리
+│   └── scheduling.ts     # 학습 데이터 복제 (ease factor 등)
 ├── parser/
 │   ├── container-parser.ts  # ::: 블록 파싱 (상태 머신)
 │   ├── nid-parser.ts        # [제목|nid...] 링크 파싱
@@ -41,6 +43,8 @@ src/
 └── utils/
     ├── diff-viewer.ts    # chalk 기반 미리보기
     └── formatters.ts     # HTML 스타일 보존
+output/
+└── backups/              # 분할 전 상태 백업 (JSON)
 ```
 
 ## 분할 전략
@@ -75,11 +79,16 @@ src/
 - 반드시 보존해야 하는 HTML: `<span style="color:...">`, `<font color>`, `<b>`, `<u>`, `<sup>`
 - `formatters.ts`에서 검증 로직 제공
 
+## 구현 완료 기능
+
+1. **rollback**: 분할 적용 전 자동 백업 + 롤백 가능
+2. **학습 데이터 복제**: ease factor를 새 카드에 복제
+3. **--note 플래그**: 특정 카드 선택 Gemini 분할
+
 ## 미구현 기능
 
-1. **rollback**: 변경 되돌리기
-2. **학습 데이터 복제**: 분할 카드에 원본 학습 이력 복사
-3. **전체 Soft Split**: 현재 5개만 분석 (전체 후보 분석 미지원)
+1. **전체 Soft Split**: 현재 5개만 분석 (전체 후보 분석 미지원)
+2. **interval/due 복제**: AnkiConnect 제한으로 ease factor만 복제 가능
 
 ## 실행 방법
 
@@ -93,7 +102,20 @@ bun run split
 # 분할 실제 적용 (⚠️ 주의)
 bun run split --apply
 
-# 특정 카드 분석
+# 특정 카드 Gemini 분할 (미리보기)
+bun run src/index.ts split --note 1757399484677
+
+# 특정 카드 Gemini 분할 (적용)
+bun run src/index.ts split --note 1757399484677 --apply
+
+# 백업 목록 조회
+bun run src/index.ts backups
+
+# 롤백 (최근 또는 특정 백업)
+bun run src/index.ts rollback
+bun run src/index.ts rollback <backupId>
+
+# 카드 분석
 bun run src/index.ts analyze "[책] 이것이 취업을 위한 컴퓨터 과학이다" 1757399484677
 ```
 
