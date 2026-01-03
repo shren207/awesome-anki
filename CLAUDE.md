@@ -20,32 +20,49 @@ Anki 카드를 원자적 단위로 분할하는 Claude Code 스킬. 정보 밀�
   - 1757400981612: 네임 서버의 계층적 구조
   - 1757407967676: DNS 레코드 타입
 
-## 아키텍처
+## 아키텍처 (모노레포)
 
 ```
-src/
-├── index.ts              # CLI 진입점 (status, split, analyze, rollback, backups)
-├── anki/
-│   ├── client.ts         # AnkiConnect API 래퍼
-│   ├── operations.ts     # nid 승계 전략 (updateNoteFields vs addNotes)
-│   ├── backup.ts         # 백업/롤백 관리
-│   └── scheduling.ts     # 학습 데이터 복제 (ease factor 등)
-├── parser/
-│   ├── container-parser.ts  # ::: 블록 파싱 (상태 머신)
-│   ├── nid-parser.ts        # [제목|nid...] 링크 파싱
-│   └── cloze-parser.ts      # {{c1::...}} 파싱
-├── gemini/
-│   ├── client.ts         # Gemini API 호출
-│   ├── prompts.ts        # 분할 프롬프트
-│   └── validator.ts      # zod 스키마 검증
-├── splitter/
-│   └── atomic-converter.ts  # Hard Split (정규식 기반)
-└── utils/
-    ├── diff-viewer.ts    # chalk 기반 미리보기
-    └── formatters.ts     # HTML 스타일 보존
-output/
-└── backups/              # 분할 전 상태 백업 (JSON)
+anki-claude-code/
+├── packages/
+│   ├── core/                 # 핵심 로직 (CLI + 웹 공용)
+│   │   └── src/
+│   │       ├── anki/         # AnkiConnect API 래퍼
+│   │       ├── gemini/       # Gemini API 호출
+│   │       ├── parser/       # 텍스트 파싱 (container, nid, cloze)
+│   │       ├── splitter/     # Hard/Soft Split 로직
+│   │       └── utils/        # HTML 스타일 보존, diff
+│   │
+│   ├── server/               # Hono REST API 서버
+│   │   └── src/
+│   │       ├── index.ts      # 서버 진입점 (localhost:3000)
+│   │       └── routes/       # API 라우트 (decks, cards, split, backup)
+│   │
+│   └── web/                  # React 프론트엔드
+│       └── src/
+│           ├── pages/        # Dashboard, CardBrowser, SplitWorkspace
+│           ├── components/   # UI 컴포넌트 (shadcn/ui 스타일)
+│           └── hooks/        # TanStack Query 훅
+│
+├── src/                      # CLI 진입점 (하위 호환)
+│   └── index.ts
+│
+└── output/
+    └── backups/              # 분할 전 상태 백업 (JSON)
 ```
+
+## 웹 API 엔드포인트
+
+| 메서드 | 경로 | 설명 |
+|--------|------|------|
+| GET | /api/decks | 덱 목록 |
+| GET | /api/decks/:name/stats | 덱 통계 (분할 후보 수 등) |
+| GET | /api/cards/deck/:name | 카드 목록 (페이지네이션, 필터) |
+| GET | /api/cards/:noteId | 카드 상세 |
+| POST | /api/split/preview | 분할 미리보기 |
+| POST | /api/split/apply | 분할 적용 |
+| GET | /api/backup | 백업 목록 |
+| POST | /api/backup/:id/rollback | 롤백 |
 
 ## 분할 전략
 
@@ -92,31 +109,37 @@ output/
 
 ## 실행 방법
 
+### 웹 GUI (권장)
+
+```bash
+# 개발 서버 (서버 + 클라이언트 동시 실행)
+bun run dev
+
+# 서버만 (localhost:3000)
+bun run dev:server
+
+# 클라이언트만 (localhost:5173)
+bun run dev:web
+```
+
+### CLI (하위 호환)
+
 ```bash
 # 연결 확인
-bun run status
+bun run cli:status
 
-# 분할 미리보기 (Hard + Soft Split)
-bun run split
+# 분할 미리보기
+bun run cli:split
 
-# 분할 실제 적용 (⚠️ 주의)
-bun run split --apply
+# 분할 적용
+bun run cli:split -- --apply
 
-# 특정 카드 Gemini 분할 (미리보기)
-bun run src/index.ts split --note 1757399484677
+# 특정 카드 Gemini 분할
+bun run cli split --note 1757399484677
 
-# 특정 카드 Gemini 분할 (적용)
-bun run src/index.ts split --note 1757399484677 --apply
-
-# 백업 목록 조회
-bun run src/index.ts backups
-
-# 롤백 (최근 또는 특정 백업)
-bun run src/index.ts rollback
-bun run src/index.ts rollback <backupId>
-
-# 카드 분석
-bun run src/index.ts analyze "[책] 이것이 취업을 위한 컴퓨터 과학이다" 1757399484677
+# 백업/롤백
+bun run cli backups
+bun run cli rollback
 ```
 
 ## 주의사항
