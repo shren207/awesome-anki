@@ -1,13 +1,21 @@
 {
-  "name": "anki-claude-code",
+  "name": "anki-splitter",
   "version": "1.0.0",
-  "description": "Anki Card Manager - Claude Code skill for managing Anki decks/cards",
+  "private": true,
+  "description": "Anki Card Splitter - Web GUI for managing Anki cards",
   "type": "module",
+  "workspaces": ["packages/*"],
   "scripts": {
-    "dev": "bun run src/index.ts",
-    "status": "bun run src/index.ts status",
-    "split": "bun run src/index.ts split",
-    "build": "bun run tsc",
+    "dev": "concurrently \"bun run dev:server\" \"bun run dev:web\"",
+    "dev:server": "bun run --watch packages/server/src/index.ts",
+    "dev:web": "bun run --cwd packages/web dev",
+    "build": "bun run build:core && bun run build:server && bun run build:web",
+    "build:core": "bun run --cwd packages/core build",
+    "build:server": "bun run --cwd packages/server build",
+    "build:web": "bun run --cwd packages/web build",
+    "cli": "bun run src/index.ts",
+    "cli:status": "bun run src/index.ts status",
+    "cli:split": "bun run src/index.ts split",
     "typecheck": "bun run tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +28,7 @@
   "devDependencies": {
     "@types/diff": "^5.2.0",
     "@types/node": "^20.0.0",
+    "concurrently": "^8.2.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }
