@@ -3,11 +3,11 @@ import { cn } from '../../lib/utils';
 import { LayoutDashboard, Scissors, FolderOpen, History, HelpCircle } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/split', icon: Scissors, label: 'Split' },
-  { to: '/browse', icon: FolderOpen, label: 'Browse' },
-  { to: '/backups', icon: History, label: 'Backups' },
-  { to: '/help', icon: HelpCircle, label: 'Help' },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', tourId: 'nav-dashboard' },
+  { to: '/split', icon: Scissors, label: 'Split', tourId: 'nav-split' },
+  { to: '/browse', icon: FolderOpen, label: 'Browse', tourId: 'nav-browse' },
+  { to: '/backups', icon: History, label: 'Backups', tourId: 'nav-backups' },
+  { to: '/help', icon: HelpCircle, label: 'Help', tourId: 'nav-help' },
 ];
 
 export function Sidebar() {
@@ -25,6 +25,7 @@ export function Sidebar() {
             <NavLink
               key={item.to}
               to={item.to}
+              data-tour={item.tourId}
               className={({ isActive }) =>
                 cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',

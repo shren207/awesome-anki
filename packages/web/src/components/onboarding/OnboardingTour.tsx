@@ -56,7 +56,7 @@ const steps: Step[] = [
     placement: 'top',
   },
   {
-    target: 'a[href="/split"]',
+    target: '[data-tour="nav-split"]',
     content: (
       <div className="text-left">
         <h3 className="font-bold mb-2">Split 페이지</h3>
@@ -67,9 +67,10 @@ const steps: Step[] = [
       </div>
     ),
     placement: 'right',
+    spotlightPadding: 0,
   },
   {
-    target: 'a[href="/backups"]',
+    target: '[data-tour="nav-backups"]',
     content: (
       <div className="text-left">
         <h3 className="font-bold mb-2">Backups 페이지</h3>
@@ -80,9 +81,10 @@ const steps: Step[] = [
       </div>
     ),
     placement: 'right',
+    spotlightPadding: 0,
   },
   {
-    target: 'a[href="/help"]',
+    target: '[data-tour="nav-help"]',
     content: (
       <div className="text-left">
         <h3 className="font-bold mb-2">도움말</h3>
@@ -93,6 +95,7 @@ const steps: Step[] = [
       </div>
     ),
     placement: 'right',
+    spotlightPadding: 0,
   },
 ];
 
