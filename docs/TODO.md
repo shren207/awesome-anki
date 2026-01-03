@@ -108,13 +108,80 @@
 3. [ ] ValidationPanel 컴포넌트
 4. [ ] CardBrowser에 검증 상태 뱃지 추가
 
+### 🔴 우선순위 높음: ContentRenderer 파싱 로직 개선
+
+**문제**: 현재 ContentRenderer는 자체 파싱 로직을 사용하여 Anki 템플릿과 미스매칭 발생
+
+**제안**: 기존 Anki 템플릿(`templates/front.html`)의 파싱 로직 재사용
+
+**분석 결과**:
+
+| 항목 | 현재 (자체 구현) | 개선 (템플릿 재사용) |
+|------|------------------|---------------------|
+| 마크다운 파싱 | 정규식 수동 변환 | markdown-it 라이브러리 |
+| 컨테이너 | 자체 processContainers() | markdown-it-container 플러그인 |
+| 코드 하이라이트 | 단순 `<code>` 태그 | highlight.js |
+| 수학 공식 | KaTeX (rehype 플러그인) | KaTeX (renderMathInElement) |
+| nid 링크 | 자체 processNidLinks() | renderLink() 함수 |
+
+**기존 템플릿에서 사용하는 라이브러리**:
+```javascript
+// templates/front.html에서 추출
+- markdown-it (마크다운 파싱)
+- markdown-it-container (::: 컨테이너)
+- markdown-it-mark (==하이라이트==)
+- highlight.js (코드 구문 강조)
+- KaTeX (수학 공식)
+```
+
+**필요한 작업**:
+1. [ ] 의존성 추가
+   ```bash
+   bun add markdown-it markdown-it-container markdown-it-mark highlight.js
+   bun add -d @types/markdown-it
+   ```
+
+2. [ ] ContentRenderer 리팩토링
+   - [ ] `templates/front.html`의 `getMarkdownRenderer()` 로직 추출
+   - [ ] `renderLink()` 함수 재사용 (nid 링크 처리)
+   - [ ] `convertBackticksToCodeTags()` 적용
+   - [ ] highlight.js 테마 CSS 추가
+
+3. [ ] 컨테이너 플러그인 설정
+   ```typescript
+   // markdown-it-container 설정
+   const containerTypes = ['toggle', 'link', 'tip', 'warning', 'error', 'note'];
+   containerTypes.forEach(type => {
+     md.use(markdownItContainer, type, { /* 옵션 */ });
+   });
+   ```
+
+4. [ ] KaTeX 통합
+   - [ ] 수학 공식 자동 렌더링 ($...$ 및 $$...$$)
+   - [ ] 에러 핸들링 (잘못된 수식 처리)
+
+**고려사항**:
+- ⚠️ 템플릿은 CDN 스크립트 사용 → npm 패키지로 대체 필요
+- ⚠️ DOMPurify와 충돌 가능성 → 허용 태그/속성 확장 필요
+- ⚠️ SSR/CSR 차이 → 클라이언트에서만 렌더링하도록 처리
+
+**예상 사이드 이펙트**:
+- 번들 사이즈 증가 (highlight.js ~1MB) → 동적 import로 완화 가능
+- 초기 렌더링 지연 → useMemo로 캐싱
+- 기존 커스텀 로직 제거 필요
+
+**실현 가능성**: ✅ 높음
+- 템플릿 로직이 잘 정리되어 있음
+- 동일한 라이브러리 사용으로 100% 호환 보장
+- 향후 템플릿 변경 시에도 동기화 용이
+
+**예상 소요 시간**: 2시간
+
+---
+
 ### 기타 미구현 기능 📋
 
-1. [x] ~~**ContentRenderer 파싱 문제**~~ ✅ 해결됨
-   - nid 링크 처리 함수 추가
-   - 처리 순서 개선: HTML 전처리 → nid 링크 → Cloze → 컨테이너
-
-2. [ ] **전체 Soft Split**
+1. [ ] **전체 Soft Split**
    - 현재: 5개 후보만 분석 (API 비용 고려)
    - 개선: 전체 후보 분석 옵션 추가
 
@@ -154,7 +221,25 @@
 
 ## 다음 세션에서 할 작업
 
-### Phase 5: 카드 검증 기능 🔴
+### 1️⃣ ContentRenderer 파싱 로직 개선 🔴 (우선순위 높음)
+
+**목표**: Anki 템플릿(`templates/front.html`)과 동일한 파싱 로직 사용
+
+**이유**: 자체 구현 파싱 로직으로 인한 미스매칭 문제 해결
+
+**빠른 시작**:
+```bash
+cd /Users/green/IdeaProjects/anki-claude-code/packages/web
+bun add markdown-it markdown-it-container markdown-it-mark highlight.js
+bun add -d @types/markdown-it
+```
+
+**핵심 참고 파일**: `templates/front.html`의 다음 함수들
+- `getMarkdownRenderer()` (라인 152~270)
+- `renderLink()` (라인 356~392)
+- `convertBackticksToCodeTags()` (라인 472~509)
+
+### 2️⃣ Phase 5: 카드 검증 기능
 
 **목표**: Gemini를 활용한 카드 내용 검증
 
@@ -175,6 +260,7 @@
 4. CardBrowser에 검증 상태 뱃지 추가
 
 ### 예상 소요 시간
+- ContentRenderer 파싱 개선: 2시간
 - Phase 5 (카드 검증): 2-3시간
 
 ---
