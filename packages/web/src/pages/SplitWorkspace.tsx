@@ -27,6 +27,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { ValidationPanel } from '../components/validation/ValidationPanel';
+import { HelpTooltip } from '../components/help/HelpTooltip';
 
 interface SplitCandidate {
   noteId: number;
@@ -200,6 +201,7 @@ export function SplitWorkspace() {
           {/* 프롬프트 버전 선택 */}
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-muted-foreground" />
+            <HelpTooltip helpKey="promptVersionSelect" />
             <select
               value={selectedVersionId || ''}
               onChange={(e) => setSelectedVersionId(e.target.value)}

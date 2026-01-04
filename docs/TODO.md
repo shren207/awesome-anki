@@ -484,14 +484,18 @@
 - `packages/web/src/lib/api.ts` - prompts API 추가
 - `packages/web/src/lib/query-keys.ts` - prompts 쿼리 키 추가
 
-### 후속 작업 (도움말 업데이트)
+### 후속 작업 (도움말 업데이트) ✅ (2026-01-04 완료)
 
-- [ ] **HelpTooltip 추가**: PromptManager, SplitWorkspace 버전 선택에 도움말 아이콘 추가
-- [ ] **Help 페이지 업데이트**: 프롬프트 버전 관리 기능 설명 섹션 추가
-  - 버전 관리 개념 설명
-  - PromptManager 사용법
-  - A/B 테스트 방법
-  - 메트릭 해석 가이드
+- [x] **HelpTooltip 추가**: PromptManager, SplitWorkspace 버전 선택에 도움말 아이콘 추가
+  - PromptManager 탭별 HelpTooltip (버전, 히스토리, 실험, 메트릭)
+  - SplitWorkspace 버전 선택 드롭다운 HelpTooltip
+- [x] **Help 페이지 업데이트**: 프롬프트 버전 관리 기능 설명 섹션 추가
+  - 프롬프트 버전 관리 (버전 관리 개념, 버전 선택하기)
+  - A/B 테스트 (테스트 방법 4단계, 결과 해석)
+  - 메트릭 해석 가이드 (주요 지표 5개, 히스토리 활용)
+- [x] **helpContent.ts 업데이트**: 6개 프롬프트 관련 도움말 항목 추가
+- [x] **용어집 업데이트**: 프롬프트 버전, A/B 테스트 항목 추가
+- [x] **FAQ 업데이트**: 프롬프트 버전 사용법, 승인률 낮을 때 대응 방법 추가
 
 ### Deprecated 예정
 

@@ -9,6 +9,9 @@ import {
   HelpCircle,
   Layers,
   FolderOpen,
+  FileText,
+  FlaskConical,
+  BarChart3,
 } from 'lucide-react';
 
 export function Help() {
@@ -168,6 +171,36 @@ export function Help() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Prompts */}
+          <Card id="prompts-page">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Prompts (프롬프트)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                프롬프트 버전 관리, 분할 히스토리, A/B 테스트, 성능 메트릭을
+                통합 관리합니다.
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>
+                  <span className="font-medium">버전</span>: 프롬프트 버전 목록 및 활성화
+                </li>
+                <li>
+                  <span className="font-medium">히스토리</span>: 분할 기록 조회
+                </li>
+                <li>
+                  <span className="font-medium">실험</span>: A/B 테스트 관리
+                </li>
+                <li>
+                  <span className="font-medium">메트릭</span>: 버전별 성능 비교
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -251,6 +284,123 @@ export function Help() {
                 유사성 검사에서 "임베딩 사용" 옵션을 선택하면 의미 기반으로
                 유사한 카드를 찾습니다. Jaccard보다 동의어, 유사 표현을 더 잘
                 인식합니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* 프롬프트 버전 관리 */}
+      <section id="prompt-version">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              프롬프트 버전 관리
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              프롬프트 버전 관리 시스템으로 AI의 분할 품질을 지속적으로 개선할 수
+              있습니다. SuperMemo의 Twenty Rules를 기반으로 설계된 프롬프트로 원자적
+              카드를 생성합니다.
+            </p>
+            <div id="prompt-version-concept">
+              <h4 className="font-medium text-sm">버전 관리 개념</h4>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                각 버전은 시스템 프롬프트, 분할 규칙, 예제를 포함합니다. 버전별로
+                카드 길이 제한(Cloze 80자, Basic 40자)이나 힌트 필수 여부 등을
+                다르게 설정할 수 있습니다.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-sm">버전 선택하기</h4>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Split 페이지 헤더에서 프롬프트 버전을 선택합니다. 활성화된 버전에는 ✓
+                표시가 있습니다. 다른 버전을 선택하면 해당 규칙으로 분할이 수행됩니다.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* A/B 테스트 */}
+      <section id="prompt-experiment">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FlaskConical className="h-5 w-5" />
+              A/B 테스트
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              두 프롬프트 버전의 성능을 비교하는 실험을 수행할 수 있습니다.
+            </p>
+            <div>
+              <h4 className="font-medium text-sm">테스트 방법</h4>
+              <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2 mt-2">
+                <li>
+                  Prompts 페이지에서 "실험" 탭으로 이동
+                </li>
+                <li>
+                  "새 실험" 버튼을 클릭하여 비교할 두 버전 선택
+                </li>
+                <li>
+                  Split 페이지에서 각 버전으로 카드를 분할
+                </li>
+                <li>
+                  실험 대시보드에서 승인률, 평균 글자 수 등 비교
+                </li>
+              </ol>
+            </div>
+            <div>
+              <h4 className="font-medium text-sm">결과 해석</h4>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                승인률이 높고, 수정률과 거부율이 낮은 버전이 더 좋은 성능을 보입니다.
+                평균 글자 수가 목표 범위(Cloze 40~60자) 내에 있는지도 확인하세요.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* 메트릭 */}
+      <section id="prompt-metrics">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              메트릭 해석 가이드
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-medium text-sm">주요 지표</h4>
+              <ul className="text-sm text-muted-foreground space-y-2 mt-2">
+                <li>
+                  <strong>총 분할 수</strong>: 해당 버전으로 수행된 분할 횟수
+                </li>
+                <li>
+                  <strong>승인률</strong>: 수정 없이 바로 승인된 비율 (높을수록 좋음)
+                </li>
+                <li>
+                  <strong>수정률</strong>: 사용자가 일부 수정 후 승인한 비율
+                </li>
+                <li>
+                  <strong>거부율</strong>: 분할 결과를 거부한 비율 (낮을수록 좋음)
+                </li>
+                <li>
+                  <strong>평균 글자 수</strong>: 생성된 카드의 평균 길이 (40~60자 권장)
+                </li>
+              </ul>
+            </div>
+            <div id="prompt-history">
+              <h4 className="font-medium text-sm">히스토리 활용</h4>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Prompts 페이지의 "히스토리" 탭에서 모든 분할 기록을 확인할 수
+                있습니다. 특정 버전의 분할 결과가 자주 수정/거부되면 프롬프트 규칙
+                조정이 필요합니다.
               </p>
             </div>
           </CardContent>

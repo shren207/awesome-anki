@@ -634,9 +634,10 @@ export const helpContent = {
 
 **적용 위치**:
 - Dashboard: 분할 후보, Hard Split, Soft Split, 임베딩 커버리지
-- SplitWorkspace: 분할 후보 목록, 분할 미리보기
+- SplitWorkspace: 분할 후보 목록, 분할 미리보기, **버전 선택**
 - ValidationPanel: 각 검증 항목
 - CardBrowser: 검증 상태 아이콘
+- **PromptManager**: 탭별 도움말 (버전, 히스토리, 실험, 메트릭)
 
 ### Help 페이지 (/help)
 
@@ -644,11 +645,15 @@ export const helpContent = {
 
 **페이지 구성**:
 1. 시작하기 (Getting Started)
-2. 기능별 가이드 (Dashboard, Split, Browse, Backups)
+2. 기능별 가이드 (Dashboard, Split, Browse, Backups, **Prompts**)
 3. 검증 기능 설명 (팩트체크, 최신성, 유사성, 문맥 일관성)
-4. 용어집 (Glossary) - 주요 용어 정의
-5. FAQ - 자주 묻는 질문
-6. 문제 해결 (Troubleshooting)
+4. 임베딩 기능
+5. **프롬프트 버전 관리** (버전 개념, 버전 선택)
+6. **A/B 테스트** (테스트 방법 4단계, 결과 해석)
+7. **메트릭 해석 가이드** (주요 지표, 히스토리 활용)
+8. 용어집 (Glossary) - 주요 용어 정의 + **프롬프트 버전, A/B 테스트**
+9. FAQ - 자주 묻는 질문 + **프롬프트 관련 2개 추가**
+10. 문제 해결 (Troubleshooting)
 
 ### 온보딩 투어
 

@@ -28,6 +28,7 @@ import {
   ThumbsDown,
   Edit,
 } from 'lucide-react';
+import { HelpTooltip } from '../components/help/HelpTooltip';
 
 type TabType = 'versions' | 'history' | 'experiments' | 'metrics';
 
@@ -41,10 +42,10 @@ export function PromptManager() {
   const activatePrompt = useActivatePrompt();
 
   const tabs = [
-    { id: 'versions' as const, label: '버전', icon: FileText, count: versionsData?.versions?.length || 0 },
-    { id: 'history' as const, label: '히스토리', icon: History, count: historyData?.total || 0 },
-    { id: 'experiments' as const, label: '실험', icon: FlaskConical, count: experimentsData?.total || 0 },
-    { id: 'metrics' as const, label: '메트릭', icon: BarChart3 },
+    { id: 'versions' as const, label: '버전', icon: FileText, count: versionsData?.versions?.length || 0, helpKey: 'promptVersion' as const },
+    { id: 'history' as const, label: '히스토리', icon: History, count: historyData?.total || 0, helpKey: 'promptHistory' as const },
+    { id: 'experiments' as const, label: '실험', icon: FlaskConical, count: experimentsData?.total || 0, helpKey: 'promptExperiment' as const },
+    { id: 'metrics' as const, label: '메트릭', icon: BarChart3, helpKey: 'promptMetrics' as const },
   ];
 
   const handleActivate = (versionId: string) => {
@@ -73,6 +74,9 @@ export function PromptManager() {
           >
             <tab.icon className="w-4 h-4" />
             {tab.label}
+            {tab.helpKey && (
+              <HelpTooltip helpKey={tab.helpKey} />
+            )}
             {tab.count !== undefined && (
               <span className="text-xs bg-muted px-1.5 py-0.5 rounded">{tab.count}</span>
             )}
