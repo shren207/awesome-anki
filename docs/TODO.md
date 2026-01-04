@@ -312,6 +312,35 @@
 
 ---
 
+## 📌 다음 대형 작업: 프롬프트 버전 관리 시스템
+
+> **계획 파일**: `~/.claude/plans/merry-gathering-petal.md`
+> **작성일**: 2026-01-04
+
+### 배경
+- CS 학습용 Anki 카드가 너무 길어서 모바일 학습 어려움
+- Soft Split 결과물 품질 불만족
+- SuperMemo's Twenty Rules 기반 진정한 Atomic Card 필요
+
+### 구현 단계
+| Phase | 작업 | 예상 소요 |
+|-------|------|----------|
+| 0 | Claude Skill 생성 (`/skill-creator`) | 30분 |
+| 1 | 프롬프트 개선 (SYSTEM_PROMPT) | 1-2일 |
+| 2 | 버전 관리 인프라 | 1-2일 |
+| 3 | API 확장 + 실패 패턴 분석 | 2-3일 |
+| 4 | 웹 UI + 모바일 시뮬레이터 | 2-3일 |
+| 5 | Recursive Splitting | 1일 |
+
+### 핵심 변경
+- Cloze 40~60자, Basic Front 20~30자, Back ~20자
+- Yes/No Cloze 힌트 필수
+- 중첩 맥락 태그 `[DNS > Record > A]`
+- Self-Correction 루프 (길이 초과 시 재작성)
+- A/B 테스트, 품질 추적, 롤백
+
+---
+
 ## 참고 정보
 
 ### 프로젝트 실행
