@@ -1,0 +1,9 @@
+title = "anki-claude-code gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  '''\.claude/skills/.*\.md''',
+]

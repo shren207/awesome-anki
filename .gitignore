@@ -3,4 +3,11 @@ dist/
 .env
 *.colpkg
 .DS_Store
-output/
+
+# .claude/
+.claude/plans/
+
+# output/ (backups와 embeddings만 무시, prompts는 추적)
+output/backups/
+output/embeddings/
+!output/prompts/

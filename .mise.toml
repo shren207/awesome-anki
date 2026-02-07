@@ -1,0 +1,4 @@
+[tools]
+lefthook = "latest"
+biome = "latest"
+gitleaks = "latest"
