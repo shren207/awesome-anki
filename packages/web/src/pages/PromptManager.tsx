@@ -360,9 +360,8 @@ function VersionsTab({
                 <h3 className="text-sm font-medium">
                   시스템 프롬프트 (미리보기)
                 </h3>
-                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto max-h-40">
-                  {selectedVersion.systemPrompt?.slice(0, 500)}
-                  {(selectedVersion.systemPrompt?.length || 0) > 500 && "..."}
+                <pre className="bg-muted p-3 rounded text-xs overflow-auto max-h-96 whitespace-pre-wrap break-words">
+                  {selectedVersion.systemPrompt}
                 </pre>
               </div>
             </CardContent>
