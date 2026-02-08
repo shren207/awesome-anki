@@ -36,8 +36,10 @@ anki-claude-code/
 │   │       ├── prompt-version/ # 프롬프트 버전 관리
 │   │       │   ├── types.ts    # PromptVersion 등 11개 타입
 │   │       │   └── storage.ts  # CRUD, 히스토리, 실험
+│   │       ├── errors.ts      # 커스텀 에러 클래스 (AppError 계층)
 │   │       └── utils/        # 유틸리티
-│   │           └── formatters.ts # HTML 스타일 보존, 검증
+│   │           ├── formatters.ts    # HTML 스타일 보존, 검증
+│   │           └── atomic-write.ts  # 원자적 파일 쓰기, 뮤텍스
 │   │
 │   ├── server/               # Hono REST API 서버
 │   │   └── src/

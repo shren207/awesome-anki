@@ -1,5 +1,14 @@
 // @anki-splitter/core - Main entry point
 
+// Error classes
+export {
+  AnkiConnectError,
+  AppError,
+  NotFoundError,
+  TimeoutError,
+  ValidationError,
+} from "./errors.js";
+
 export {
   type BackupEntry,
   createBackup,

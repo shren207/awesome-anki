@@ -2,14 +2,9 @@
  * 백업 및 롤백 관리
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { atomicWriteFileSync } from "../utils/atomic-write.js";
 import {
   deleteNotes,
   getNotesInfo,
@@ -72,7 +67,7 @@ function loadBackupFile(filePath: string): BackupFile {
  */
 function saveBackupFile(filePath: string, data: BackupFile): void {
   ensureBackupDir();
-  writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  atomicWriteFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
 /**

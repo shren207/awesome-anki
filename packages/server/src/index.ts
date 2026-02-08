@@ -2,6 +2,7 @@
  * Anki Card Splitter - API Server
  */
 import "dotenv/config";
+import { AppError } from "@anki-splitter/core";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -44,8 +45,15 @@ app.route("/api/prompts", prompts);
 
 // Error handler
 app.onError((err, c) => {
-  console.error("Server error:", err);
-  return c.json({ error: err.message || "Internal server error" }, 500);
+  if (err instanceof AppError) {
+    console.error(`[${err.statusCode}] ${err.name}:`, err.message);
+    return c.json(
+      { error: err.message },
+      err.statusCode as 400 | 404 | 500 | 502 | 504,
+    );
+  }
+  console.error("Unhandled server error:", err);
+  return c.json({ error: "Internal server error" }, 500);
 });
 
 // Start server

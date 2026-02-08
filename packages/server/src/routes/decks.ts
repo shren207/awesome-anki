@@ -17,12 +17,8 @@ const app = new Hono();
  * 덱 목록 조회
  */
 app.get("/", async (c) => {
-  try {
-    const decks = await getDeckNames();
-    return c.json({ decks });
-  } catch (_error) {
-    return c.json({ error: "Failed to fetch decks" }, 500);
-  }
+  const decks = await getDeckNames();
+  return c.json({ decks });
 });
 
 /**
@@ -30,37 +26,33 @@ app.get("/", async (c) => {
  * 덱 통계 조회
  */
 app.get("/:name/stats", async (c) => {
-  try {
-    const deckName = decodeURIComponent(c.req.param("name"));
-    const notes = await getDeckNotes(deckName);
+  const deckName = decodeURIComponent(c.req.param("name"));
+  const notes = await getDeckNotes(deckName);
 
-    let splitCandidates = 0;
-    let hardSplitCount = 0;
-    let softSplitCount = 0;
+  let splitCandidates = 0;
+  let hardSplitCount = 0;
+  let softSplitCount = 0;
 
-    for (const note of notes) {
-      const text = extractTextField(note);
-      const analysis = analyzeForSplit(text);
+  for (const note of notes) {
+    const text = extractTextField(note);
+    const analysis = analyzeForSplit(text);
 
-      if (analysis.canHardSplit) {
-        hardSplitCount++;
-        splitCandidates++;
-      } else if (analysis.clozeCount > 3) {
-        softSplitCount++;
-        splitCandidates++;
-      }
+    if (analysis.canHardSplit) {
+      hardSplitCount++;
+      splitCandidates++;
+    } else if (analysis.clozeCount > 3) {
+      softSplitCount++;
+      splitCandidates++;
     }
-
-    return c.json({
-      deckName,
-      totalNotes: notes.length,
-      splitCandidates,
-      hardSplitCount,
-      softSplitCount,
-    });
-  } catch (_error) {
-    return c.json({ error: "Failed to fetch deck stats" }, 500);
   }
+
+  return c.json({
+    deckName,
+    totalNotes: notes.length,
+    splitCandidates,
+    hardSplitCount,
+    softSplitCount,
+  });
 });
 
 export default app;

@@ -1,8 +1,8 @@
 # AnkiConnect 트러블슈팅
 
-## 연결 실패
+## 연결 실패 (AnkiConnectError)
 
-**증상**: `ankiConnect` 호출 시 ECONNREFUSED
+**증상**: `AnkiConnect에 연결할 수 없습니다` 에러 (502)
 
 **확인 사항**:
 1. Anki가 실행 중인지 확인
@@ -13,6 +13,17 @@
 # 연결 테스트
 curl -s http://localhost:8765 -X POST -d '{"action":"version","version":6}'
 ```
+
+## 응답 시간 초과 (TimeoutError)
+
+**증상**: `AnkiConnect 응답 시간 초과 (5000ms)` 에러 (504)
+
+**원인**: Anki가 큰 작업 수행 중이거나 응답 불능 상태
+
+**해결**:
+1. Anki UI 확인 — 동기화 중이거나 다이얼로그가 열려 있지 않은지
+2. 배치 작업의 경우 `{ timeout: 30000 }` 옵션으로 타임아웃 증가
+3. Anki 재시작 후 재시도
 
 ## 프로필 안전
 

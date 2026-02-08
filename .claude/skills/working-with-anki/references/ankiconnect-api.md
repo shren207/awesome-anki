@@ -10,9 +10,23 @@
 ## API 래퍼 (packages/core/src/anki/client.ts)
 
 ```typescript
-// 기본 호출 패턴
-const result = await ankiConnect(action: string, params?: object);
+// 기본 호출 패턴 (기본 타임아웃 5초)
+const result = await ankiConnect(action, params);
+
+// 타임아웃 커스텀 (배치 작업 등)
+const result = await ankiConnect(action, params, { timeout: 30000 });
 ```
+
+## 타임아웃 및 에러 유형
+
+| 에러 타입 | 상황 | HTTP 코드 |
+|-----------|------|-----------|
+| `TimeoutError` | Anki 응답 지연 (기본 5초 초과) | 504 |
+| `AnkiConnectError` | 연결 거부, HTTP 에러, API 에러 | 502 |
+
+- `AbortSignal.timeout()`으로 구현 (Bun 네이티브 지원)
+- 연결 거부 vs 타임아웃 자동 구분
+- 배치 작업(임베딩 생성 등)에서는 `{ timeout: 30000 }` 권장
 
 ## 주요 메서드
 

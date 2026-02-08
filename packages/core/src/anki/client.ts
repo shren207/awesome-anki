@@ -3,9 +3,13 @@
  * https://foosoft.net/projects/anki-connect/
  */
 
-const ANKI_CONNECT_URL =
-  process.env.ANKI_CONNECT_URL || "http://localhost:8765";
+import { AnkiConnectError, TimeoutError } from "../errors.js";
+
+function getAnkiConnectUrl(): string {
+  return process.env.ANKI_CONNECT_URL || "http://localhost:8765";
+}
 const ANKI_CONNECT_VERSION = 6;
+const DEFAULT_TIMEOUT = 5000;
 
 export interface AnkiConnectRequest {
   action: string;
@@ -39,27 +43,47 @@ export interface NoteFields {
 export async function ankiConnect<T>(
   action: string,
   params?: Record<string, unknown>,
+  options?: { timeout?: number },
 ): Promise<T> {
+  const timeoutMs = options?.timeout ?? DEFAULT_TIMEOUT;
+
   const request: AnkiConnectRequest = {
     action,
     version: ANKI_CONNECT_VERSION,
     ...(params && { params }),
   };
 
-  const response = await fetch(ANKI_CONNECT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
+  let response: Response;
+  try {
+    response = await fetch(getAnkiConnectUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error: unknown) {
+    if (error instanceof TimeoutError || error instanceof AnkiConnectError) {
+      throw error;
+    }
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new TimeoutError(
+        `AnkiConnect 응답 시간 초과 (${timeoutMs}ms). Anki가 실행 중인지 확인하세요.`,
+      );
+    }
+    // Bun: ConnectionRefused, Node: TypeError (fetch failed)
+    throw new AnkiConnectError(
+      "AnkiConnect에 연결할 수 없습니다. Anki가 실행 중이고 AnkiConnect 애드온이 활성화되어 있는지 확인하세요.",
+    );
+  }
 
   if (!response.ok) {
-    throw new Error(`AnkiConnect HTTP error: ${response.status}`);
+    throw new AnkiConnectError(`AnkiConnect HTTP error: ${response.status}`);
   }
 
   const data = (await response.json()) as AnkiConnectResponse<T>;
 
   if (data.error) {
-    throw new Error(`AnkiConnect error: ${data.error}`);
+    throw new AnkiConnectError(`AnkiConnect error: ${data.error}`);
   }
 
   return data.result;

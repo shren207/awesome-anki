@@ -1,29 +1,52 @@
 # API 에러 핸들링
 
-## 현재 상태
+## 아키텍처
 
-에러 핸들링이 통일되지 않음 (기술 부채로 추적 중).
+글로벌 `app.onError` 미들웨어가 모든 에러를 중앙 처리. 라우트에서는 try/catch 없이 에러를 throw.
 
-## 일반 패턴
+## 에러 클래스 계층 (packages/core/src/errors.ts)
+
+```
+AppError (base) — statusCode, message
+├── NotFoundError     (404)
+├── ValidationError   (400)
+├── AnkiConnectError  (502)
+└── TimeoutError      (504)
+```
+
+## 글로벌 에러 핸들러 (packages/server/src/index.ts)
 
 ```typescript
-app.post('/api/resource', async (c) => {
-  try {
-    const result = await operation();
-    return c.json(result);
-  } catch (error) {
-    return c.json({ error: error.message }, 500);
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json({ error: err.message }, err.statusCode);
   }
+  return c.json({ error: "Internal server error" }, 500);
 });
 ```
 
-## AnkiConnect 에러
+- `AppError` 인스턴스 → 해당 statusCode + 메시지 반환
+- 그 외 → 500 + generic 메시지 (내부 에러 노출 방지)
 
-AnkiConnect API가 에러를 반환할 때:
+## 라우트에서 에러 throw 패턴
+
 ```typescript
-const result = await ankiConnect('action', params);
-// result가 null이거나 에러 포함 시 처리
+import { NotFoundError, ValidationError } from "@anki-splitter/core";
+
+app.get("/:noteId", async (c) => {
+  const noteId = parseInt(c.req.param("noteId"), 10);
+  const note = await getNoteById(noteId);
+
+  if (!note) {
+    throw new NotFoundError(`노트 ${noteId}를 찾을 수 없습니다`);
+  }
+
+  return c.json({ noteId: note.noteId, ... });
+});
 ```
+
+- try/catch 불필요 — 에러가 글로벌 핸들러로 전파됨
+- AnkiConnect 에러(TimeoutError, AnkiConnectError)는 client.ts에서 자동 throw
 
 ## Gemini API 에러
 

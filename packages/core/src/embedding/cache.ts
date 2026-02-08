@@ -8,8 +8,9 @@
  */
 
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { atomicWriteFileSync } from "../utils/atomic-write.js";
 
 const CACHE_DIR = "output/embeddings";
 
@@ -92,7 +93,7 @@ export function saveCache(cache: EmbeddingCache): void {
 
   try {
     const data = JSON.stringify(cache, null, 2);
-    writeFileSync(path, data, "utf-8");
+    atomicWriteFileSync(path, data);
   } catch (error) {
     console.error(`캐시 저장 실패 (${cache.deckName}):`, error);
     throw error;

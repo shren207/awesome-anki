@@ -4,32 +4,50 @@
 
 ```typescript
 // packages/server/src/index.ts
-import { Hono } from 'hono';
-import decks from './routes/decks.js';
-import cards from './routes/cards.js';
-// ...
+import { AppError } from "@anki-splitter/core";
+import { Hono } from "hono";
 
 const app = new Hono();
-app.route('/', decks);
-app.route('/', cards);
+app.route("/api/decks", decks);
+app.route("/api/cards", cards);
 // ...
+
+app.onError((err, c) => {
+  if (err instanceof AppError) {
+    return c.json({ error: err.message }, err.statusCode);
+  }
+  return c.json({ error: "Internal server error" }, 500);
+});
 ```
 
 ## 새 라우트 추가 패턴
 
 ```typescript
 // packages/server/src/routes/new-route.ts
-import { Hono } from 'hono';
+import { NotFoundError, ValidationError } from "@anki-splitter/core";
+import { Hono } from "hono";
 
 const app = new Hono();
 
-app.get('/api/resource', async (c) => {
-  const result = await operation();
-  return c.json(result);
+// try/catch 없이 에러 throw → 글로벌 핸들러가 처리
+app.get("/:id", async (c) => {
+  const id = c.req.param("id");
+  const resource = await findResource(id);
+
+  if (!resource) {
+    throw new NotFoundError(`리소스 ${id}를 찾을 수 없습니다`);
+  }
+
+  return c.json(resource);
 });
 
-app.post('/api/resource', async (c) => {
+app.post("/", async (c) => {
   const body = await c.req.json();
+
+  if (!body.name) {
+    throw new ValidationError("name이 필요합니다");
+  }
+
   const result = await create(body);
   return c.json(result, 201);
 });
@@ -42,10 +60,10 @@ export default app;
 ### 페이지네이션 (cards.ts)
 
 ```typescript
-app.get('/api/cards/deck/:name', async (c) => {
-  const deckName = decodeURIComponent(c.req.param('name'));
-  const limit = Number(c.req.query('limit') || '50');
-  const offset = Number(c.req.query('offset') || '0');
+app.get("/deck/:name", async (c) => {
+  const deckName = decodeURIComponent(c.req.param("name"));
+  const limit = Number(c.req.query("limit") || "50");
+  const offset = Number(c.req.query("offset") || "0");
   // ...
 });
 ```
@@ -54,7 +72,7 @@ app.get('/api/cards/deck/:name', async (c) => {
 
 카드 목록 API에서 텍스트 200자 제한:
 ```typescript
-text: text.slice(0, 200) + (text.length > 200 ? '...' : '')
+text: text.slice(0, 200) + (text.length > 200 ? "..." : "")
 ```
 → 상세 조회는 별도 `GET /api/cards/:noteId` 사용
 

@@ -3,8 +3,9 @@
  */
 
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { atomicWriteFile, withFileMutex } from "../utils/atomic-write.js";
 import type {
   ActiveVersionInfo,
   Experiment,
@@ -78,7 +79,7 @@ export async function saveVersion(version: PromptVersion): Promise<void> {
   await ensureDir(VERSIONS_PATH);
 
   const filePath = join(VERSIONS_PATH, `${version.id}.json`);
-  await writeFile(filePath, JSON.stringify(version, null, 2), "utf-8");
+  await atomicWriteFile(filePath, JSON.stringify(version, null, 2));
 }
 
 /**
@@ -200,10 +201,9 @@ export async function setActiveVersion(
     activatedBy,
   };
 
-  await writeFile(
+  await atomicWriteFile(
     ACTIVE_VERSION_FILE,
     JSON.stringify(activeInfo, null, 2),
-    "utf-8",
   );
 }
 
@@ -242,21 +242,23 @@ export async function addHistoryEntry(
   const fileName = getHistoryFileName();
   const filePath = join(HISTORY_PATH, fileName);
 
-  // 기존 히스토리 로드
-  let history: SplitHistoryEntry[] = [];
-  if (existsSync(filePath)) {
-    const content = await readFile(filePath, "utf-8");
-    history = JSON.parse(content);
-  }
+  // 파일 뮤텍스로 동시 쓰기 직렬화
+  const newEntry = await withFileMutex(filePath, async () => {
+    let history: SplitHistoryEntry[] = [];
+    if (existsSync(filePath)) {
+      const content = await readFile(filePath, "utf-8");
+      history = JSON.parse(content);
+    }
 
-  // 새 항목 추가
-  const newEntry: SplitHistoryEntry = {
-    ...entry,
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-  };
+    const created: SplitHistoryEntry = {
+      ...entry,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
 
-  history.push(newEntry);
-  await writeFile(filePath, JSON.stringify(history, null, 2), "utf-8");
+    history.push(created);
+    await atomicWriteFile(filePath, JSON.stringify(history, null, 2));
+    return created;
+  });
 
   // 해당 버전의 메트릭 업데이트
   await updateVersionMetrics(entry.promptVersionId, newEntry);
@@ -420,7 +422,7 @@ export async function createExperiment(
   };
 
   const filePath = join(EXPERIMENTS_PATH, `${experiment.id}.json`);
-  await writeFile(filePath, JSON.stringify(experiment, null, 2), "utf-8");
+  await atomicWriteFile(filePath, JSON.stringify(experiment, null, 2));
 
   return experiment;
 }
@@ -533,7 +535,7 @@ export async function completeExperiment(
   experiment.winnerVersionId = winnerVersionId;
 
   const filePath = join(EXPERIMENTS_PATH, `${experimentId}.json`);
-  await writeFile(filePath, JSON.stringify(experiment, null, 2), "utf-8");
+  await atomicWriteFile(filePath, JSON.stringify(experiment, null, 2));
 }
 
 // ============================================================================

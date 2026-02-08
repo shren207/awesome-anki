@@ -53,6 +53,44 @@ Markdown + KaTeX + Cloze 렌더링. **markdown-it** 기반.
 <HelpTooltip helpKey="splitCandidate" />
 ```
 
+## Error Boundary (2단 구조)
+
+### 1단: 최상위 (react-error-boundary)
+
+`ErrorFallback` 컴포넌트 — BrowserRouter/QueryClientProvider 바깥에서 최후 방어선.
+
+```tsx
+// packages/web/src/components/ErrorFallback.tsx
+<ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => window.location.reload()}>
+  <QueryClientProvider>
+    <BrowserRouter>...</BrowserRouter>
+  </QueryClientProvider>
+</ErrorBoundary>
+```
+
+- "예기치 않은 오류가 발생했습니다" + 새로고침 버튼
+- React Router/Provider 레벨 에러 캐치
+
+### 2단: 라우트별 (React Router v7 errorElement)
+
+`RouteError` 컴포넌트 — 각 Route에 `errorElement` 설정.
+
+```tsx
+// packages/web/src/components/RouteError.tsx
+<Route path="split" element={<SplitWorkspace />} errorElement={<RouteError />} />
+```
+
+- "페이지 오류" + "홈으로 돌아가기" 링크
+- 한 페이지 에러가 다른 페이지에 영향 안 줌
+- `useRouteError()` 훅으로 에러 정보 접근
+
+### 새 페이지 추가 시
+
+Route에 `errorElement={<RouteError />}` 반드시 포함:
+```tsx
+<Route path="new-page" element={<NewPage />} errorElement={<RouteError />} />
+```
+
 ## OnboardingTour (deprecated 예정)
 
 - `react-joyride` 기반 7단계 투어

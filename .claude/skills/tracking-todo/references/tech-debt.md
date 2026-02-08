@@ -6,9 +6,10 @@
 - `packages/web/src/components/card/ContentRenderer.tsx`에 있는 컨테이너 파싱 로직을 `packages/core/`로 이동
 - core 패키지에서 공통 사용 가능하게 분리
 
-### API 에러 핸들링 통일
-- 현재 각 라우트에서 개별 try/catch
-- Hono 미들웨어 기반 통일된 에러 핸들러 필요
+### ~~API 에러 핸들링 통일~~ (완료)
+- ~~현재 각 라우트에서 개별 try/catch~~
+- ~~Hono 미들웨어 기반 통일된 에러 핸들러 필요~~
+- **완료**: 커스텀 에러 클래스(AppError 계층) + 글로벌 onError 미들웨어 + 라우트 try/catch 제거
 
 ### 로딩 상태 스켈레톤 UI
 - 현재 단순 로딩 스피너

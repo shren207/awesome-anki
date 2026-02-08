@@ -1,6 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "react-error-boundary";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ErrorFallback } from "./components/ErrorFallback";
 import { Layout } from "./components/layout/Layout";
+import { RouteError } from "./components/RouteError";
 import { BackupManager } from "./pages/BackupManager";
 import { CardBrowser } from "./pages/CardBrowser";
 import { Dashboard } from "./pages/Dashboard";
@@ -19,19 +22,48 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="split" element={<SplitWorkspace />} />
-            <Route path="browse" element={<CardBrowser />} />
-            <Route path="backups" element={<BackupManager />} />
-            <Route path="prompts" element={<PromptManager />} />
-            <Route path="help" element={<Help />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onReset={() => window.location.reload()}
+    >
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout />} errorElement={<RouteError />}>
+              <Route
+                index
+                element={<Dashboard />}
+                errorElement={<RouteError />}
+              />
+              <Route
+                path="split"
+                element={<SplitWorkspace />}
+                errorElement={<RouteError />}
+              />
+              <Route
+                path="browse"
+                element={<CardBrowser />}
+                errorElement={<RouteError />}
+              />
+              <Route
+                path="backups"
+                element={<BackupManager />}
+                errorElement={<RouteError />}
+              />
+              <Route
+                path="prompts"
+                element={<PromptManager />}
+                errorElement={<RouteError />}
+              />
+              <Route
+                path="help"
+                element={<Help />}
+                errorElement={<RouteError />}
+              />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
