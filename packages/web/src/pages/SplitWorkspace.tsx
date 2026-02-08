@@ -29,14 +29,17 @@ import {
 import { ValidationPanel } from "../components/validation/ValidationPanel";
 import { useCardDetail, useCards } from "../hooks/useCards";
 import { useDecks } from "../hooks/useDecks";
+import { useDifficultCards } from "../hooks/useDifficultCards";
 import { useAddPromptHistory, usePromptVersions } from "../hooks/usePrompts";
 import {
   getCachedSplitPreview,
   useSplitApply,
   useSplitPreview,
 } from "../hooks/useSplit";
-import type { SplitPreviewResult } from "../lib/api";
+import type { DifficultCard, SplitPreviewResult } from "../lib/api";
 import { cn } from "../lib/utils";
+
+type WorkspaceMode = "candidates" | "difficult";
 
 interface SplitCandidate {
   noteId: number;
@@ -45,6 +48,34 @@ interface SplitCandidate {
     canHardSplit: boolean;
     canSoftSplit: boolean;
     clozeCount: number;
+  };
+  difficulty?: {
+    score: number;
+    lapses: number;
+    easeFactor: number;
+    interval: number;
+    reps: number;
+    reasons: string[];
+  };
+}
+
+function mapDifficultToCandidate(card: DifficultCard): SplitCandidate {
+  return {
+    noteId: card.noteId,
+    text: card.text,
+    analysis: {
+      canHardSplit: false,
+      canSoftSplit: true,
+      clozeCount: 0,
+    },
+    difficulty: {
+      score: card.difficultyScore,
+      lapses: card.lapses,
+      easeFactor: card.easeFactor,
+      interval: card.interval,
+      reps: card.reps,
+      reasons: card.difficultyReasons,
+    },
   };
 }
 
@@ -56,6 +87,7 @@ export function SplitWorkspace() {
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     null,
   );
+  const [mode, setMode] = useState<WorkspaceMode>("candidates");
 
   const queryClient = useQueryClient();
   const { data: decksData } = useDecks();
@@ -66,6 +98,9 @@ export function SplitWorkspace() {
       filter: "all",
     },
   );
+
+  const { data: difficultData, isLoading: isLoadingDifficult } =
+    useDifficultCards(selectedDeck, { limit: 200 });
 
   // 프롬프트 버전 관련
   const { data: promptVersionsData, isLoading: isLoadingVersions } =
@@ -157,6 +192,10 @@ export function SplitWorkspace() {
       c.analysis?.canHardSplit || c.analysis?.canSoftSplit,
   ) as SplitCandidate[];
 
+  const difficultCards = (difficultData?.cards || []).map(
+    mapDifficultToCandidate,
+  );
+
   const handleApply = () => {
     if (!selectedCard || !selectedDeck || !previewData?.splitCards) return;
 
@@ -184,7 +223,9 @@ export function SplitWorkspace() {
             });
           }
           // 성공 후 목록에서 제거하고 다음 카드 선택
-          const nextCard = candidates.find(
+          const activeList =
+            mode === "candidates" ? candidates : difficultCards;
+          const nextCard = activeList.find(
             (c) => c.noteId !== selectedCard.noteId,
           );
           setSelectedCard(nextCard || null);
@@ -203,6 +244,12 @@ export function SplitWorkspace() {
       }
     }
   };
+
+  const isLoadingList =
+    mode === "candidates" ? isLoadingCards : isLoadingDifficult;
+  const activeList = mode === "candidates" ? candidates : difficultCards;
+  const activeCount =
+    mode === "candidates" ? candidates.length : (difficultData?.total ?? 0);
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col">
@@ -244,14 +291,16 @@ export function SplitWorkspace() {
                 promptVersionsData?.versions?.map((version) => (
                   <option key={version.id} value={version.id}>
                     {version.name}
-                    {version.id === promptVersionsData.activeVersionId && " ✓"}
+                    {version.id === promptVersionsData.activeVersionId &&
+                      " \u2713"}
                   </option>
                 ))
               )}
             </select>
           </div>
           <span className="text-sm text-muted-foreground">
-            {candidates.length}개 분할 후보
+            {activeCount}개{" "}
+            {mode === "candidates" ? "분할 후보" : "재분할 대상"}
           </span>
         </div>
       </div>
@@ -262,18 +311,53 @@ export function SplitWorkspace() {
         <div className="col-span-3 flex flex-col min-h-0">
           <Card className="flex-1 flex flex-col min-h-0">
             <CardHeader className="py-3 px-4 border-b shrink-0">
-              <CardTitle className="text-sm">분할 후보</CardTitle>
+              <div className="flex items-center gap-1 bg-muted p-0.5 rounded-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("candidates");
+                    setSelectedCard(null);
+                  }}
+                  className={cn(
+                    "flex-1 text-xs px-2 py-1.5 rounded transition-colors",
+                    mode === "candidates"
+                      ? "bg-background shadow-sm font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Scissors className="w-3 h-3 inline mr-1" />
+                  분할 후보
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("difficult");
+                    setSelectedCard(null);
+                  }}
+                  className={cn(
+                    "flex-1 text-xs px-2 py-1.5 rounded transition-colors",
+                    mode === "difficult"
+                      ? "bg-background shadow-sm font-medium"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <AlertTriangle className="w-3 h-3 inline mr-1" />
+                  재분할 대상
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-0">
-              {isLoadingCards ? (
+              {isLoadingList ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin" />
                 </div>
-              ) : candidates.length === 0 ? (
+              ) : activeList.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  분할 후보가 없습니다
+                  {mode === "candidates"
+                    ? "분할 후보가 없습니다"
+                    : "재분할 대상이 없습니다"}
                 </div>
-              ) : (
+              ) : mode === "candidates" ? (
                 <div className="divide-y">
                   {candidates.map((card) => (
                     <button
@@ -307,6 +391,55 @@ export function SplitWorkspace() {
                               Soft
                             </span>
                           )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {difficultCards.map((card) => (
+                    <button
+                      type="button"
+                      key={card.noteId}
+                      onClick={() => setSelectedCard(card)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 hover:bg-muted transition-colors",
+                        selectedCard?.noteId === card.noteId && "bg-primary/10",
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {card.noteId}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {card.text.slice(0, 60)}...
+                          </p>
+                          <div className="flex gap-2 mt-1 text-xs text-muted-foreground">
+                            <span>lapses: {card.difficulty?.lapses}</span>
+                            <span>
+                              ease:{" "}
+                              {card.difficulty
+                                ? (card.difficulty.easeFactor / 10).toFixed(0)
+                                : 0}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                        <div className="shrink-0">
+                          <span
+                            className={cn(
+                              "text-xs px-1.5 py-0.5 rounded font-medium",
+                              (card.difficulty?.score ?? 0) > 70
+                                ? "bg-red-100 text-red-700"
+                                : (card.difficulty?.score ?? 0) > 40
+                                  ? "bg-orange-100 text-orange-700"
+                                  : "bg-yellow-100 text-yellow-700",
+                            )}
+                          >
+                            {card.difficulty?.score ?? 0}
+                          </span>
                         </div>
                       </div>
                     </button>
@@ -351,6 +484,45 @@ export function SplitWorkspace() {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* 난이도 정보 배너 */}
+                    {selectedCard.difficulty && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span className="font-medium text-sm text-amber-800">
+                            난이도 점수: {selectedCard.difficulty.score}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-amber-700">
+                          <span>
+                            실패 횟수: {selectedCard.difficulty.lapses}회
+                          </span>
+                          <span>
+                            Ease Factor:{" "}
+                            {(selectedCard.difficulty.easeFactor / 10).toFixed(
+                              0,
+                            )}
+                            %
+                          </span>
+                          <span>
+                            복습 간격: {selectedCard.difficulty.interval}일
+                          </span>
+                          <span>총 복습: {selectedCard.difficulty.reps}회</span>
+                        </div>
+                        {selectedCard.difficulty.reasons.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {selectedCard.difficulty.reasons.map((reason) => (
+                              <span
+                                key={reason}
+                                className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded"
+                              >
+                                {reason}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <ContentRenderer
                       content={cardDetail?.text || selectedCard.text}
                       showToggle={true}
@@ -446,7 +618,7 @@ export function SplitWorkspace() {
                   {/* 캐시 표시 */}
                   {cachedPreview && (
                     <div className="text-xs text-muted-foreground bg-green-50 px-2 py-1 rounded inline-block">
-                      ✓ 캐시된 결과
+                      {"\u2713"} 캐시된 결과
                     </div>
                   )}
                   {/* 분할 요약 */}

@@ -8,6 +8,7 @@ import {
   extractTextField,
   getClozeStats,
   getDeckNotes,
+  getDifficultCards,
   getNoteById,
   NotFoundError,
   parseClozes,
@@ -65,6 +66,29 @@ app.get("/deck/:name", async (c) => {
     page,
     limit,
     totalPages: Math.ceil(filtered.length / limit),
+  });
+});
+
+/**
+ * GET /api/cards/deck/:name/difficult
+ * 학습 데이터 기반 어려운 카드 조회
+ */
+app.get("/deck/:name/difficult", async (c) => {
+  const deckName = decodeURIComponent(c.req.param("name"));
+  const page = parseInt(c.req.query("page") || "1", 10);
+  const limit = parseInt(c.req.query("limit") || "50", 10);
+
+  const difficultCards = await getDifficultCards(deckName);
+
+  const startIndex = (page - 1) * limit;
+  const paginated = difficultCards.slice(startIndex, startIndex + limit);
+
+  return c.json({
+    cards: paginated,
+    total: difficultCards.length,
+    page,
+    limit,
+    totalPages: Math.ceil(difficultCards.length / limit),
   });
 });
 

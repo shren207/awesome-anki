@@ -7,6 +7,8 @@ export const queryKeys = {
     byDeck: (deck: string, opts?: { page?: number; filter?: string }) =>
       ["cards", "deck", deck, opts] as const,
     detail: (noteId: number) => ["cards", "detail", noteId] as const,
+    difficult: (deck: string, opts?: { page?: number; limit?: number }) =>
+      ["cards", "difficult", deck, opts] as const,
   },
 
   split: {

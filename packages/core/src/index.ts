@@ -1,14 +1,5 @@
 // @anki-splitter/core - Main entry point
 
-// Error classes
-export {
-  AnkiConnectError,
-  AppError,
-  NotFoundError,
-  TimeoutError,
-  ValidationError,
-} from "./errors.js";
-
 export {
   type BackupEntry,
   createBackup,
@@ -38,6 +29,14 @@ export {
   updateNoteFields,
 } from "./anki/client.js";
 export {
+  computeDifficultyScore,
+  DEFAULT_THRESHOLDS,
+  type DifficultCardInfo,
+  type DifficultyThresholds,
+  getDifficultCards,
+  getDifficultyReasons,
+} from "./anki/difficulty.js";
+export {
   addSplitCards,
   applySplitResult,
   extractTags,
@@ -48,7 +47,6 @@ export {
   type SplitResult,
   updateMainCard,
 } from "./anki/operations.js";
-
 export {
   type CardSchedulingInfo,
   cloneSchedulingAfterSplit,
@@ -61,6 +59,14 @@ export {
 } from "./anki/scheduling.js";
 // Embedding exports
 export * from "./embedding/index.js";
+// Error classes
+export {
+  AnkiConnectError,
+  AppError,
+  NotFoundError,
+  TimeoutError,
+  ValidationError,
+} from "./errors.js";
 // Gemini exports
 export {
   analyzeCardForSplit,

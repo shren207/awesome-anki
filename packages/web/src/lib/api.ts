@@ -127,6 +127,20 @@ export interface SimilarityResult extends ValidationResult {
   };
 }
 
+// Difficulty types
+export interface DifficultCard {
+  noteId: number;
+  cardId: number;
+  text: string;
+  tags: string[];
+  lapses: number;
+  easeFactor: number;
+  interval: number;
+  reps: number;
+  difficultyScore: number;
+  difficultyReasons: string[];
+}
+
 // Embedding types
 export interface EmbeddingStatus {
   exists: boolean;
@@ -291,6 +305,21 @@ export const api = {
       }>(`/cards/deck/${encodeURIComponent(deck)}${query ? `?${query}` : ""}`);
     },
     getById: (noteId: number) => fetchJson<CardDetail>(`/cards/${noteId}`),
+    getDifficult: (deck: string, opts?: { page?: number; limit?: number }) => {
+      const params = new URLSearchParams();
+      if (opts?.page) params.set("page", String(opts.page));
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const query = params.toString();
+      return fetchJson<{
+        cards: DifficultCard[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      }>(
+        `/cards/deck/${encodeURIComponent(deck)}/difficult${query ? `?${query}` : ""}`,
+      );
+    },
   },
 
   split: {
