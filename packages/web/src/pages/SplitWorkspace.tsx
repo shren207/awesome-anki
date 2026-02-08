@@ -150,35 +150,32 @@ export function SplitWorkspace() {
     }
   }, [promptVersionsData, selectedVersionId]);
 
-  // 카드 선택 시 캐시 확인 후 필요한 경우만 API 호출
-  useEffect(() => {
-    if (selectedCard) {
+  // 카드 선택 핸들러 — useEffect 대신 이벤트 핸들러에서 직접 처리하여
+  // splitPreview 참조 불안정으로 인한 무한 렌더 루프 방지
+  const handleSelectCard = (card: SplitCandidate | null) => {
+    setSelectedCard(card);
+    if (card) {
       // mutation 상태 초기화 (이전 카드 결과 제거)
       splitPreview.reset();
 
       // 분할 타입 자동 선택
-      const type = selectedCard.analysis.canHardSplit ? "hard" : "soft";
+      const type = card.analysis.canHardSplit ? "hard" : "soft";
       setSplitType(type);
 
       // 캐시 확인
       const cached = getCachedSplitPreview(
         queryClient,
-        selectedCard.noteId,
+        card.noteId,
         type === "soft",
       );
 
       // 캐시 없고 Hard Split이면 자동 요청 (Gemini 비용 없음)
-      if (!cached && selectedCard.analysis.canHardSplit) {
-        splitPreview.mutate({ noteId: selectedCard.noteId, useGemini: false });
+      if (!cached && card.analysis.canHardSplit) {
+        splitPreview.mutate({ noteId: card.noteId, useGemini: false });
       }
       // Soft Split은 사용자가 명시적으로 요청해야 함 (캐시된 결과 있으면 바로 표시)
     }
-  }, [
-    selectedCard?.noteId,
-    selectedCard,
-    queryClient, // mutation 상태 초기화 (이전 카드 결과 제거)
-    splitPreview,
-  ]);
+  };
 
   // Soft Split 분석 요청 핸들러
   const handleRequestSoftSplit = () => {
@@ -228,7 +225,7 @@ export function SplitWorkspace() {
           const nextCard = activeList.find(
             (c) => c.noteId !== selectedCard.noteId,
           );
-          setSelectedCard(nextCard || null);
+          handleSelectCard(nextCard || null);
         },
       },
     );
@@ -261,7 +258,7 @@ export function SplitWorkspace() {
             value={selectedDeck || ""}
             onChange={(e) => {
               setSelectedDeck(e.target.value);
-              setSelectedCard(null);
+              handleSelectCard(null);
             }}
             className="px-3 py-1.5 border rounded-md bg-background text-sm"
           >
@@ -316,7 +313,7 @@ export function SplitWorkspace() {
                   type="button"
                   onClick={() => {
                     setMode("candidates");
-                    setSelectedCard(null);
+                    handleSelectCard(null);
                   }}
                   className={cn(
                     "flex-1 text-xs px-2 py-1.5 rounded transition-colors",
@@ -332,7 +329,7 @@ export function SplitWorkspace() {
                   type="button"
                   onClick={() => {
                     setMode("difficult");
-                    setSelectedCard(null);
+                    handleSelectCard(null);
                   }}
                   className={cn(
                     "flex-1 text-xs px-2 py-1.5 rounded transition-colors",
@@ -363,7 +360,7 @@ export function SplitWorkspace() {
                     <button
                       type="button"
                       key={card.noteId}
-                      onClick={() => setSelectedCard(card)}
+                      onClick={() => handleSelectCard(card)}
                       className={cn(
                         "w-full text-left px-4 py-3 hover:bg-muted transition-colors",
                         selectedCard?.noteId === card.noteId && "bg-primary/10",
@@ -402,7 +399,7 @@ export function SplitWorkspace() {
                     <button
                       type="button"
                       key={card.noteId}
-                      onClick={() => setSelectedCard(card)}
+                      onClick={() => handleSelectCard(card)}
                       className={cn(
                         "w-full text-left px-4 py-3 hover:bg-muted transition-colors",
                         selectedCard?.noteId === card.noteId && "bg-primary/10",

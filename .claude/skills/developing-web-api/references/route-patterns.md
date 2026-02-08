@@ -18,6 +18,14 @@ app.onError((err, c) => {
   }
   return c.json({ error: "Internal server error" }, 500);
 });
+
+// 서버 시작 — globalThis로 HMR 이중 바인딩 방지
+// ⚠️ export default { port, fetch } 패턴 사용 금지 (Bun HMR 버그)
+if (globalThis.__ankiServer) {
+  globalThis.__ankiServer.reload({ fetch: app.fetch });
+} else {
+  globalThis.__ankiServer = Bun.serve({ port, fetch: app.fetch });
+}
 ```
 
 ## 새 라우트 추가 패턴

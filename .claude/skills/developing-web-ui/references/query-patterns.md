@@ -85,6 +85,18 @@ function getCachedSplitPreview(
 }
 ```
 
+## ⚠️ useMutation + useEffect 안티패턴
+
+`useMutation()` 반환값은 매 렌더마다 새 참조를 생성하므로 `useEffect` 의존성 배열에 넣으면 무한 루프 발생:
+
+```typescript
+// ❌ 금지: splitPreview가 매 렌더마다 바뀌어 effect 무한 실행
+useEffect(() => { splitPreview.reset(); }, [splitPreview]);
+
+// ✅ 이벤트 핸들러에서 직접 호출
+const handleSelect = () => { splitPreview.reset(); splitPreview.mutate(...); };
+```
+
 ## 캐시 무효화
 
 분할 적용 후 관련 캐시 무효화 필수:

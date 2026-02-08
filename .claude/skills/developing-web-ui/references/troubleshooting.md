@@ -64,6 +64,31 @@ queryClient.invalidateQueries({ queryKey: queryKeys.backups.all });
 - **문제**: (?) 아이콘에 커서 변화 없음
 - **해결**: `cursor-pointer` 클래스 추가
 
+## useMutation 반환값을 useEffect 의존성에 넣으면 무한 루프
+
+- **문제**: SplitWorkspace에서 카드 선택 후 사이드바 네비게이션이 작동하지 않음 (URL만 변경, 페이지 미전환)
+- **원인**: `useMutation()` 반환값(`splitPreview`)을 `useEffect` 의존성 배열에 포함. 이 객체는 매 렌더마다 새 참조를 생성하여 effect → `reset()` → 상태변경 → 재렌더 → effect의 무한 루프 발생. React의 라우트 전환을 방해
+- **해결**: `useEffect` 대신 **이벤트 핸들러**에서 직접 처리
+  ```typescript
+  // ❌ 잘못된 패턴
+  useEffect(() => {
+    if (selectedCard) {
+      splitPreview.reset();
+      splitPreview.mutate(...);
+    }
+  }, [selectedCard, splitPreview]); // splitPreview는 매 렌더마다 새 참조
+
+  // ✅ 올바른 패턴
+  const handleSelectCard = (card: SplitCandidate | null) => {
+    setSelectedCard(card);
+    if (card) {
+      splitPreview.reset();
+      splitPreview.mutate(...);
+    }
+  };
+  ```
+- **규칙**: `useMutation` 반환값은 절대 `useEffect` deps에 넣지 말 것. 이벤트 핸들러나 콜백에서 직접 호출
+
 ## 포트 충돌 (개발 서버)
 
 ```bash

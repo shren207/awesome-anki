@@ -56,12 +56,24 @@ app.onError((err, c) => {
   return c.json({ error: "Internal server error" }, 500);
 });
 
-// Start server
+// Start server — Bun.serve()를 직접 호출하여 HMR 이중 바인딩 방지
 const port = parseInt(process.env.PORT || "3000", 10);
 
-console.log(`🚀 Anki Splitter API Server starting on http://localhost:${port}`);
+declare global {
+  var __ankiServer: ReturnType<typeof Bun.serve> | undefined;
+}
 
-export default {
-  port,
-  fetch: app.fetch,
-};
+if (globalThis.__ankiServer) {
+  globalThis.__ankiServer.reload({ fetch: app.fetch });
+  console.log(
+    `🔄 Anki Splitter API Server reloaded on http://localhost:${port}`,
+  );
+} else {
+  globalThis.__ankiServer = Bun.serve({
+    port,
+    fetch: app.fetch,
+  });
+  console.log(
+    `🚀 Anki Splitter API Server started on http://localhost:${port}`,
+  );
+}
